@@ -1,0 +1,51 @@
+{
+  "name": "vera-desktop",
+  "version": "1.0.0",
+  "description": "Transform websites into desktop apps with spaces and multi-account support",
+  "main": "src/main/index.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "build": "electron-builder",
+    "dist": "electron-builder --publish=never"
+  },
+  "keywords": [
+    "electron",
+    "desktop",
+    "webapp",
+    "spaces",
+    "productivity"
+  ],
+  "author": "Vera Desktop Team",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1"
+  },
+  "dependencies": {
+    "electron-context-menu": "^3.6.1",
+    "electron-store": "^8.1.0",
+    "electron-window-state": "^5.0.3",
+    "uuid": "^9.0.1"
+  },
+  "build": {
+    "appId": "com.veradesktop.app",
+    "productName": "Vera Desktop",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "node_modules/**/*"
+    ],
+    "mac": {
+      "category": "public.app-category.productivity"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "linux": {
+      "target": "AppImage"
+    }
+  }
+}

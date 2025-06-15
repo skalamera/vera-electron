@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:;">
+    <title>Pod - Vera Desktop</title>
+    <link rel="stylesheet" href="styles/main.css?v=1.1">
+    <link rel="stylesheet" href="styles/space.css?v=1.1">
+</head>
+
+<body>
+    <div id="app">
+        <!-- Title Bar (Windows/Linux) -->
+        <div id="titlebar" class="titlebar">
+            <div class="titlebar-drag">
+                <div class="titlebar-title" id="space-title">Pod - Vera Desktop</div>
+            </div>
+            <div class="titlebar-controls">
+                <button class="titlebar-button" id="minimize-btn">
+                    <svg width="10" height="1" viewBox="0 0 10 1">
+                        <rect width="10" height="1" fill="currentColor" />
+                    </svg>
+                </button>
+                <button class="titlebar-button" id="maximize-btn">
+                    <svg width="10" height="10" viewBox="0 0 10 10">
+                        <rect width="10" height="10" stroke="currentColor" fill="none" stroke-width="1" />
+                    </svg>
+                </button>
+                <button class="titlebar-button close" id="close-btn">
+                    <svg width="10" height="10" viewBox="0 0 10 10">
+                        <path d="M0 0 L10 10 M10 0 L0 10" stroke="currentColor" stroke-width="1" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Layout -->
+        <div class="main-layout">
+            <!-- Sidebar -->
+            <aside class="sidebar space-sidebar" style="width: 280px; min-width: 280px;">
+                <div class="sidebar-header">
+                    <div class="space-info">
+                        <div class="space-icon" id="space-icon">S</div>
+                        <div class="space-details">
+                            <h3 id="space-name">Pod Name</h3>
+                            <span class="space-type">Pod</span>
+                        </div>
+                    </div>
+                    <button class="icon-button" id="collapse-sidebar-btn" title="Collapse Sidebar">
+                        <span id="collapse-sidebar-icon">
+                            <svg width="20" height="20" viewBox="0 0 20 20">
+                                <path d="M14 5 L9 10 L14 15" stroke="currentColor" stroke-width="2" fill="none" />
+                            </svg>
+                        </span>
+                    </button>
+                    <button class="icon-button" id="add-subspace-btn" title="Add Subspace">
+                        <svg width="20" height="20" viewBox="0 0 20 20">
+                            <path d="M10 5 L10 15 M5 10 L15 10" stroke="currentColor" stroke-width="2" />
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="subspaces-list" id="subspaces-list">
+                    <!-- Subspaces will be dynamically added here -->
+                </div>
+
+                <div class="sidebar-footer">
+                    <button class="sidebar-button" id="space-settings-btn">
+                        <svg width="20" height="20" viewBox="0 0 20 20">
+                            <circle cx="10" cy="10" r="2" fill="currentColor" />
+                            <path d="M10 1 L10 5 M10 15 L10 19 M1 10 L5 10 M15 10 L19 10" stroke="currentColor"
+                                stroke-width="2" />
+                        </svg>
+                        Pod Settings
+                    </button>
+                    <button class="sidebar-button" id="theme-toggle-btn" title="Toggle Dark/Light Theme"
+                        style="margin-left: 8px;">
+                        <span id="theme-toggle-icon"></span>
+                    </button>
+                </div>
+            </aside>
+
+            <!-- Content Area -->
+            <main class="content">
+                <!-- Navigation Bar -->
+                <div class="webview-nav-bar" id="webview-nav-bar"
+                    style="display: none; align-items: center; gap: 8px; padding: 8px 16px; border-bottom: 1px solid var(--border-color); background: var(--bg-secondary);">
+                    <button class="icon-button" id="nav-back-btn" title="Back">
+                        <svg width="20" height="20" viewBox="0 0 20 20">
+                            <path d="M13 5 L8 10 L13 15" stroke="currentColor" stroke-width="2" fill="none" />
+                        </svg>
+                    </button>
+                    <button class="icon-button" id="nav-forward-btn" title="Forward">
+                        <svg width="20" height="20" viewBox="0 0 20 20">
+                            <path d="M7 5 L12 10 L7 15" stroke="currentColor" stroke-width="2" fill="none" />
+                        </svg>
+                    </button>
+                    <button class="icon-button" id="nav-refresh-btn" title="Refresh">
+                        <svg width="20" height="20" viewBox="0 0 20 20">
+                            <path d="M4 10a6 6 0 1 1 2 4.47" stroke="currentColor" stroke-width="2" fill="none" />
+                            <path d="M4 10V6h4" stroke="currentColor" stroke-width="2" fill="none" />
+                        </svg>
+                    </button>
+                    <button class="icon-button" id="nav-home-btn" title="Home">
+                        <svg width="20" height="20" viewBox="0 0 20 20">
+                            <path d="M3 10 L10 3 L17 10" stroke="currentColor" stroke-width="2" fill="none" />
+                            <rect x="6" y="10" width="8" height="7" stroke="currentColor" stroke-width="2"
+                                fill="none" />
+                        </svg>
+                    </button>
+                    <button class="icon-button" id="nav-welcome-btn" title="Show Welcome Screen">
+                        <svg width="20" height="20" viewBox="0 0 20 20">
+                            <circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="2" fill="none" /><text
+                                x="10" y="15" text-anchor="middle" font-size="10" fill="currentColor">i</text>
+                        </svg>
+                    </button>
+                </div>
+                <!-- Welcome Screen -->
+                <div id="welcome-screen" class="welcome-screen">
+                    <div class="welcome-content">
+                        <h1>Welcome to <span id="welcome-space-name">Your Pod</span></h1>
+                        <p>Add apps to your Pod to organize your web applications and accounts</p>
+                        <p>Apps are bundled together under a single Pod. You can add as many as
+                            you want and switch between them with a single click.</p>
+
+                        <!-- Apps Grid -->
+                        <div id="welcome-subspaces-grid" class="welcome-subspaces-grid">
+                            <!-- Subspaces will be dynamically added here -->
+                        </div>
+
+                        <div class="quick-actions">
+                            <button class="primary-button" id="quick-add-subspace">
+                                <svg width="24" height="24" viewBox="0 0 24 24">
+                                    <path d="M12 2 L12 22 M2 12 L22 12" stroke="currentColor" stroke-width="2" />
+                                </svg>
+                                Add an App
+                            </button>
+
+                            <button class="secondary-button" id="browse-catalog">
+                                <svg width="24" height="24" viewBox="0 0 24 24">
+                                    <rect x="3" y="3" width="8" height="8" fill="currentColor" />
+                                    <rect x="13" y="3" width="8" height="8" fill="currentColor" />
+                                    <rect x="3" y="13" width="8" height="8" fill="currentColor" />
+                                    <rect x="13" y="13" width="8" height="8" fill="currentColor" />
+                                </svg>
+                                Browse App Catalog
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Webview Container -->
+                <div id="webview-container" class="webview-container" style="display: none;">
+                    <!-- Active webview will be displayed here -->
+                </div>
+            </main>
+        </div>
+
+        <!-- Add Subspace Modal -->
+        <div id="add-subspace-modal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Add App</h3>
+                    <button class="close-button" onclick="closeModal('add-subspace-modal')">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="tab-container">
+                        <div class="tabs">
+                            <button class="tab active" onclick="switchTab('catalog')">App Catalog</button>
+                            <button class="tab" onclick="switchTab('custom')">Custom App</button>
+                        </div>
+
+                        <!-- App Catalog Tab -->
+                        <div id="catalog-tab" class="tab-content active">
+                            <input type="text" class="search-input" placeholder="Search apps..." id="app-search">
+                            <div class="app-catalog" id="app-catalog">
+                                <!-- Apps will be dynamically loaded -->
+                            </div>
+                        </div>
+
+                        <!-- Custom App Tab -->
+                        <div id="custom-tab" class="tab-content" style="display: none;">
+                            <form id="custom-subspace-form">
+                                <div class="form-group">
+                                    <label for="subspace-name-input">App Name</label>
+                                    <input type="text" id="subspace-name-input" placeholder="My Custom App" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="subspace-url-input">URL</label>
+                                    <input type="url" id="subspace-url-input" placeholder="https://example.com"
+                                        required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="subspace-icon-input">Icon (Emoji, URL, or Upload)</label>
+                                    <div class="icon-input-group">
+                                        <input type="text" id="subspace-icon-input" placeholder="🌐">
+                                        <input type="file" id="subspace-icon-upload" accept=".svg,.png,.jpg,.jpeg"
+                                            style="display: none;">
+                                        <button type="button" class="secondary-button"
+                                            onclick="document.getElementById('subspace-icon-upload').click()">
+                                            <svg width="16" height="16" viewBox="0 0 16 16">
+                                                <path d="M8 2 L8 14 M2 8 L14 8" stroke="currentColor"
+                                                    stroke-width="2" />
+                                            </svg>
+                                            Upload Icon
+                                        </button>
+                                    </div>
+                                    <div id="icon-preview" class="icon-preview" style="display: none;">
+                                        <img id="preview-image" src="" alt="Icon Preview">
+                                        <button type="button" class="icon-button" onclick="clearIconPreview()">
+                                            <svg width="16" height="16" viewBox="0 0 16 16">
+                                                <path d="M2 2 L14 14 M14 2 L2 14" stroke="currentColor"
+                                                    stroke-width="2" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                            <button class="primary-button full-width" onclick="addCustomSubspace()">Add Custom
+                                App</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/space.js"></script>
+</body>
+
+</html>

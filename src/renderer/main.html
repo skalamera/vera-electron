@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:;">
+    <title>Vera Desktop</title>
+    <link rel="stylesheet" href="styles/main.css">
+</head>
+
+<body>
+    <div id="app">
+        <!-- Title Bar (Windows/Linux) -->
+        <div id="titlebar" class="titlebar">
+            <div class="titlebar-drag">
+                <div class="titlebar-title">Vera Desktop</div>
+            </div>
+            <div class="titlebar-controls">
+                <button class="titlebar-button" id="minimize-btn">
+                    <svg width="10" height="1" viewBox="0 0 10 1">
+                        <rect width="10" height="1" fill="currentColor" />
+                    </svg>
+                </button>
+                <button class="titlebar-button" id="maximize-btn">
+                    <svg width="10" height="10" viewBox="0 0 10 10">
+                        <rect width="10" height="10" stroke="currentColor" fill="none" stroke-width="1" />
+                    </svg>
+                </button>
+                <button class="titlebar-button close" id="close-btn">
+                    <svg width="10" height="10" viewBox="0 0 10 10">
+                        <path d="M0 0 L10 10 M10 0 L0 10" stroke="currentColor" stroke-width="1" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Layout -->
+        <div class="main-layout">
+            <!-- Sidebar -->
+            <aside class="sidebar">
+                <div class="sidebar-header">
+                    <div class="user-profile">
+                        <div class="user-avatar">V</div>
+                        <span class="user-name">Basic</span>
+                    </div>
+                </div>
+
+                <nav class="sidebar-nav">
+                    <button class="nav-item active" data-view="home">
+                        <svg width="20" height="20" viewBox="0 0 20 20">
+                            <path d="M10 2 L18 8 L18 18 L2 18 L2 8 Z" fill="currentColor" />
+                        </svg>
+                        Home
+                    </button>
+                    <button class="nav-item" data-view="apps">
+                        <svg width="20" height="20" viewBox="0 0 20 20">
+                            <rect x="2" y="2" width="6" height="6" fill="currentColor" />
+                            <rect x="12" y="2" width="6" height="6" fill="currentColor" />
+                            <rect x="2" y="12" width="6" height="6" fill="currentColor" />
+                            <rect x="12" y="12" width="6" height="6" fill="currentColor" />
+                        </svg>
+                        Apps
+                    </button>
+                    <button class="nav-item" data-view="spaces">
+                        <svg width="20" height="20" viewBox="0 0 20 20">
+                            <circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="2" fill="none" />
+                            <circle cx="10" cy="10" r="3" fill="currentColor" />
+                        </svg>
+                        Pods
+                    </button>
+                    <button class="nav-item" data-view="installed">
+                        <svg width="20" height="20" viewBox="0 0 20 20">
+                            <path d="M5 10 L8 13 L15 6" stroke="currentColor" stroke-width="2" fill="none" />
+                        </svg>
+                        Installed
+                    </button>
+                    <button class="nav-item" data-view="settings">
+                        <svg width="20" height="20" viewBox="0 0 20 20">
+                            <circle cx="10" cy="10" r="2" fill="currentColor" />
+                            <path d="M10 1 L10 5 M10 15 L10 19 M1 10 L5 10 M15 10 L19 10" stroke="currentColor"
+                                stroke-width="2" />
+                        </svg>
+                        Settings
+                    </button>
+                </nav>
+
+                <div class="sidebar-footer">
+                    <div class="usage-info">
+                        <div class="usage-item">
+                            <span class="usage-label">Apps</span>
+                            <span class="usage-count" id="apps-count">0 / ∞</span>
+                        </div>
+                        <div class="usage-item">
+                            <span class="usage-label">Pods</span>
+                            <span class="usage-count" id="spaces-count">0 / ∞</span>
+                        </div>
+                    </div>
+                    <div class="version-info">
+                        <span>Vera Desktop v1.0.0</span>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Content Area -->
+            <main class="content">
+                <!-- Home View -->
+                <div id="home-view" class="view active">
+                    <div class="view-header">
+                        <div class="view-header-left">
+                            <h1>Welcome to Vera Desktop</h1>
+                            <button class="icon-button refresh-header-btn" title="Refresh"
+                                onclick="refreshCurrentView()"><img src="styles/images/refresh.svg" alt="Refresh"
+                                    width="28" height="28" /></button>
+                        </div>
+                    </div>
+
+                    <div class="quick-actions">
+                        <button class="action-card" id="create-space-action">
+                            <div class="action-icon">+</div>
+                            <h3>Create Pod</h3>
+                            <p>Set up a new workspace environment</p>
+                        </button>
+
+                        <button class="action-card" id="browse-apps-action">
+                            <div class="action-icon">📱</div>
+                            <h3>Browse Apps</h3>
+                            <p>Discover popular web applications</p>
+                        </button>
+                    </div>
+
+                    <div class="recent-spaces" id="recent-spaces">
+                        <h2>Recent Pods</h2>
+                        <div class="spaces-grid" id="home-spaces-grid">
+                            <!-- Recent pods will be populated here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Apps View -->
+                <div id="apps-view" class="view">
+                    <div class="view-header">
+                        <div class="view-header-left">
+                            <h1>App Catalog</h1>
+                            <button class="icon-button refresh-header-btn" title="Refresh"
+                                onclick="refreshCurrentView()"><img src="styles/images/refresh.svg" alt="Refresh"
+                                    width="28" height="28" /></button>
+                        </div>
+                        <div class="view-header-right view-controls">
+                            <input type="text" class="search-input" placeholder="Search apps..." id="apps-search">
+                            <select class="filter-select" id="category-filter">
+                                <option value="">All Categories</option>
+                                <option value="Productivity">Productivity</option>
+                                <option value="Communication">Communication</option>
+                                <option value="Entertainment">Entertainment</option>
+                                <option value="Development">Development</option>
+                                <option value="Social">Social</option>
+                                <option value="Email">Email</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="apps-grid" id="apps-grid">
+                        <!-- Apps will be populated here -->
+                    </div>
+                </div>
+
+                <!-- Spaces View -->
+                <div id="spaces-view" class="view">
+                    <div class="view-header">
+                        <div class="view-header-left">
+                            <h1>Pods</h1>
+                            <button class="icon-button refresh-header-btn" title="Refresh"
+                                onclick="refreshCurrentView()"><img src="styles/images/refresh.svg" alt="Refresh"
+                                    width="28" height="28" /></button>
+                        </div>
+                        <div class="view-header-right">
+                            <button class="primary-button" id="create-space-btn">
+                                <svg width="20" height="20" viewBox="0 0 20 20">
+                                    <path d="M10 5 L10 15 M5 10 L15 10" stroke="currentColor" stroke-width="2" />
+                                </svg>
+                                Create Pod
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="spaces-info">
+                        <p>Pods let you create multiple separate environments within Vera Desktop, each with its own
+                            accounts, settings, bookmarks, browsing data and history.</p>
+                        <p>Pods are ideal for sharing a computer with others or keeping your different accounts, such
+                            as work and personal, completely separate.</p>
+                    </div>
+
+                    <div class="spaces-grid" id="spaces-grid">
+                        <!-- Pods will be populated here -->
+                    </div>
+                </div>
+
+                <!-- Installed View -->
+                <div id="installed-view" class="view">
+                    <div class="view-header">
+                        <div class="view-header-left">
+                            <h1>Installed Apps</h1>
+                            <button class="icon-button refresh-header-btn" title="Refresh"
+                                onclick="refreshCurrentView()"><img src="styles/images/refresh.svg" alt="Refresh"
+                                    width="28" height="28" /></button>
+                        </div>
+                        <div class="view-header-right view-controls">
+                            <input type="text" class="search-input" placeholder="Search installed apps..."
+                                id="installed-search">
+                            <select class="filter-select" id="installed-pod-filter">
+                                <option value="">All Pods</option>
+                                <!-- Pod options will be populated dynamically -->
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="installed-apps-info">
+                        <p>View and manage all apps installed across your pods. You can see which apps are installed in
+                            which pods and manage their settings.</p>
+                    </div>
+
+                    <div class="apps-grid" id="installed-apps-grid">
+                        <!-- Installed apps will be populated here -->
+                    </div>
+                </div>
+
+                <!-- Settings View -->
+                <div id="settings-view" class="view">
+                    <div class="view-header">
+                        <h1>Settings</h1>
+                        <button class="primary-button" id="save-settings-btn">Save Settings</button>
+                    </div>
+
+                    <div class="settings-content">
+                        <div class="settings-section">
+                            <h3>General</h3>
+                            <div class="setting-item">
+                                <label>
+                                    <input type="checkbox" id="dark-theme-checkbox">
+                                    Dark Theme
+                                </label>
+                                <p class="setting-description">Switch between light and dark appearance</p>
+                            </div>
+                            <div class="setting-item">
+                                <label>
+                                    <input type="checkbox" id="sync-enabled-checkbox">
+                                    Enable Cloud Sync (Pro)
+                                </label>
+                                <p class="setting-description">Sync your pods and settings across devices</p>
+                            </div>
+                        </div>
+
+                        <div class="settings-section">
+                            <h3>Privacy & Security</h3>
+                            <div class="setting-item">
+                                <label>
+                                    <input type="checkbox" id="global-adblock-checkbox">
+                                    Global Ad Blocking
+                                </label>
+                                <p class="setting-description">Block ads across all pods by default</p>
+                            </div>
+                        </div>
+
+                        <div class="settings-section">
+                            <h3>About</h3>
+                            <div class="about-info">
+                                <p><strong>Vera Desktop v1.0.0</strong></p>
+                                <p>Built with Electron and modern web technologies</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- Create Space Modal -->
+        <div id="create-space-modal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Create New Pod</h3>
+                    <button class="close-button" onclick="closeModal('create-space-modal')">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <form id="create-space-form">
+                        <div class="form-group">
+                            <label for="space-name-input">Pod Name</label>
+                            <input type="text" id="space-name-input" placeholder="Work, Personal, Projects..." required>
+                        </div>
+                        <div class="form-group">
+                            <label for="space-color-input">Color</label>
+                            <input type="color" id="space-color-input" value="#4a90e2">
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="space-adblock-input" checked>
+                                Enable Ad Blocking
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label for="space-icon-input">Icon (Emoji, URL, or Upload)</label>
+                            <div class="icon-input-group">
+                                <input type="text" id="space-icon-input" placeholder="🌐">
+                                <input type="file" id="space-icon-upload" accept=".svg,.png,.jpg,.jpeg"
+                                    style="display: none;">
+                                <button type="button" class="secondary-button"
+                                    onclick="document.getElementById('space-icon-upload').click()">
+                                    <svg width="16" height="16" viewBox="0 0 16 16">
+                                        <path d="M8 2 L8 14 M2 8 L14 8" stroke="currentColor" stroke-width="2" />
+                                    </svg>
+                                    Upload Icon
+                                </button>
+                            </div>
+                            <div id="space-icon-preview" class="icon-preview" style="display: none;">
+                                <img id="space-preview-image" src="" alt="Icon Preview">
+                                <button type="button" class="icon-button" onclick="clearSpaceIconPreview()">
+                                    <svg width="16" height="16" viewBox="0 0 16 16">
+                                        <path d="M2 2 L14 14 M14 2 L2 14" stroke="currentColor" stroke-width="2" />
+                                    </svg>
+                                </button>
+                            </div>
+                            <div class="icon-choose-label">Or choose a generic icon below</div>
+                            <div class="generic-icon-row" id="space-generic-icons">
+                                <button type="button" class="generic-icon-btn" title="Documents">
+                                    <img class="icon-img" src="styles/images/documents.svg" alt="Documents" width="32"
+                                        height="32" />
+                                </button>
+                                <button type="button" class="generic-icon-btn" title="Globe">
+                                    <img class="icon-img" src="styles/images/globe.svg" alt="Globe" width="32"
+                                        height="32" />
+                                </button>
+                                <button type="button" class="generic-icon-btn" title="Briefcase">
+                                    <img class="icon-img" src="styles/images/briefcase.svg" alt="Briefcase" width="32"
+                                        height="32" />
+                                </button>
+                                <button type="button" class="generic-icon-btn" title="Entertainment">
+                                    <img class="icon-img" src="styles/images/entertainment.svg" alt="Entertainment"
+                                        width="32" height="32" />
+                                </button>
+                                <button type="button" class="generic-icon-btn" title="Social Media">
+                                    <img class="icon-img" src="styles/images/social media.svg" alt="Social Media"
+                                        width="32" height="32" />
+                                </button>
+                                <button type="button" class="generic-icon-btn" title="Productivity">
+                                    <img class="icon-img" src="styles/images/productivity.svg" alt="Productivity"
+                                        width="32" height="32" />
+                                </button>
+                                <button type="button" class="generic-icon-btn" title="Generic">
+                                    <img class="icon-img" src="styles/images/generic.svg" alt="Generic" width="32"
+                                        height="32" />
+                                </button>
+                                <button type="button" class="generic-icon-btn" title="Music">
+                                    <img class="icon-img" src="styles/images/music.svg" alt="Music" width="32"
+                                        height="32" />
+                                </button>
+                                <button type="button" class="generic-icon-btn" title="News">
+                                    <img class="icon-img" src="styles/images/news.svg" alt="News" width="32"
+                                        height="32" />
+                                </button>
+                                <button type="button" class="generic-icon-btn" title="AI">
+                                    <img class="icon-img" src="styles/images/ai.svg" alt="AI" width="32" height="32" />
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button class="secondary-button" onclick="closeModal('create-space-modal')">Cancel</button>
+                    <button class="primary-button" onclick="createSpace()">Create Pod</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Space Modal -->
+        <div id="edit-space-modal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Edit Pod</h3>
+                    <button class="close-button" onclick="closeModal('edit-space-modal')">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <form id="edit-space-form">
+                        <div class="form-group">
+                            <label for="edit-space-name-input">Pod Name</label>
+                            <input type="text" id="edit-space-name-input" placeholder="e.g., Work, Personal" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="edit-space-color-input">Color</label>
+                            <input type="color" id="edit-space-color-input" value="#4a90e2">
+                        </div>
+
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="edit-space-adblock-input">
+                                Enable Ad Blocker
+                            </label>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="edit-space-icon-input">Icon (Emoji, URL, or Upload)</label>
+                            <div class="icon-input-group">
+                                <input type="text" id="edit-space-icon-input" placeholder="🌐">
+                                <input type="file" id="edit-space-icon-upload" accept=".svg,.png,.jpg,.jpeg"
+                                    style="display: none;">
+                                <button type="button" class="secondary-button"
+                                    onclick="document.getElementById('edit-space-icon-upload').click()">
+                                    <svg width="16" height="16" viewBox="0 0 16 16">
+                                        <path d="M8 2 L8 14 M2 8 L14 8" stroke="currentColor" stroke-width="2" />
+                                    </svg>
+                                    Upload Icon
+                                </button>
+                            </div>
+                            <div id="edit-space-icon-preview" class="icon-preview" style="display: none;">
+                                <img id="edit-space-preview-image" src="" alt="Icon Preview">
+                                <button type="button" class="icon-button" onclick="clearEditSpaceIconPreview()">
+                                    <svg width="16" height="16" viewBox="0 0 16 16">
+                                        <path d="M2 2 L14 14 M14 2 L2 14" stroke="currentColor" stroke-width="2" />
+                                    </svg>
+                                </button>
+                            </div>
+                            <div class="icon-choose-label">Or choose a generic icon below</div>
+                            <div class="generic-icon-row" id="edit-space-generic-icons">
+                                <button type="button" class="generic-icon-btn" title="Documents">
+                                    <img class="icon-img" src="styles/images/documents.svg" alt="Documents" width="32"
+                                        height="32" />
+                                </button>
+                                <button type="button" class="generic-icon-btn" title="Globe">
+                                    <img class="icon-img" src="styles/images/globe.svg" alt="Globe" width="32"
+                                        height="32" />
+                                </button>
+                                <button type="button" class="generic-icon-btn" title="Briefcase">
+                                    <img class="icon-img" src="styles/images/briefcase.svg" alt="Briefcase" width="32"
+                                        height="32" />
+                                </button>
+                                <button type="button" class="generic-icon-btn" title="Entertainment">
+                                    <img class="icon-img" src="styles/images/entertainment.svg" alt="Entertainment"
+                                        width="32" height="32" />
+                                </button>
+                                <button type="button" class="generic-icon-btn" title="Social Media">
+                                    <img class="icon-img" src="styles/images/social media.svg" alt="Social Media"
+                                        width="32" height="32" />
+                                </button>
+                                <button type="button" class="generic-icon-btn" title="Productivity">
+                                    <img class="icon-img" src="styles/images/productivity.svg" alt="Productivity"
+                                        width="32" height="32" />
+                                </button>
+                                <button type="button" class="generic-icon-btn" title="Generic">
+                                    <img class="icon-img" src="styles/images/generic.svg" alt="Generic" width="32"
+                                        height="32" />
+                                </button>
+                                <button type="button" class="generic-icon-btn" title="Music">
+                                    <img class="icon-img" src="styles/images/music.svg" alt="Music" width="32"
+                                        height="32" />
+                                </button>
+                                <button type="button" class="generic-icon-btn" title="News">
+                                    <img class="icon-img" src="styles/images/news.svg" alt="News" width="32"
+                                        height="32" />
+                                </button>
+                                <button type="button" class="generic-icon-btn" title="AI">
+                                    <img class="icon-img" src="styles/images/ai.svg" alt="AI" width="32" height="32" />
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button class="secondary-button" onclick="closeModal('edit-space-modal')">Cancel</button>
+                    <button class="primary-button" onclick="updateSpace()">Update Pod</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add App to Pod Modal -->
+        <div id="add-app-to-pod-modal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Select Pod</h3>
+                    <button class="close-button" onclick="closeModal('add-app-to-pod-modal')">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div id="add-app-pod-list" class="pod-list-grid">
+                        <!-- Pods will be rendered here -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="secondary-button" onclick="closeModal('add-app-to-pod-modal')">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add App Confirmation Modal -->
+        <div id="add-app-confirm-modal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Confirm Add App</h3>
+                    <button class="close-button" onclick="closeModal('add-app-confirm-modal')">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <p id="add-app-confirm-text">Add this app to this pod?</p>
+                </div>
+                <div class="modal-footer">
+                    <button class="secondary-button" onclick="closeModal('add-app-confirm-modal')">Cancel</button>
+                    <button class="primary-button" id="add-app-confirm-btn">Confirm</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/main.js"></script>
+</body>
+
+</html>
