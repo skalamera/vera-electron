@@ -1136,27 +1136,211 @@ async function handleVeraAIMessage(message) {
 
 // Extract context from webview
 async function extractWebviewContext(webview) {
-    const script = `
+    // Load the enhanced extraction script
+    const ContentExtractorScript = `
         (function() {
-            const config = {
-                maxLength: 10000,
-                selectors: {
-                    article: 'article, main, [role="main"], #main-content, .main-content',
-                    headings: 'h1, h2, h3, h4, h5, h6',
-                    exclude: 'script, style, nav, header, footer, aside, .ad, .advertisement, .sidebar'
-                }
-            };
-
+            const config = ${JSON.stringify({
+        maxLength: 10000,
+        selectors: {
+            article: 'article, main, [role="main"], #main-content, .main-content',
+            headings: 'h1, h2, h3, h4, h5, h6',
+            paragraphs: 'p',
+            lists: 'ul, ol',
+            exclude: 'script, style, nav, header, footer, aside, .ad, .advertisement, .sidebar'
+        }
+    })};
+            
+            // Helper function to get text content
             function getTextContent(element) {
                 if (!element) return '';
+                
+                // Clone the element to avoid modifying the original
                 const clone = element.cloneNode(true);
-                clone.querySelectorAll(config.selectors.exclude).forEach(el => el.remove());
+                
+                // Remove excluded elements
+                const excludeSelectors = config.selectors.exclude;
+                clone.querySelectorAll(excludeSelectors).forEach(el => el.remove());
+                
                 return clone.textContent.trim();
             }
-
+            
+            // Helper function to check if element is visible
+            function isElementVisible(element) {
+                if (!element) return false;
+                
+                const style = window.getComputedStyle(element);
+                const rect = element.getBoundingClientRect();
+                
+                return style.display !== 'none' && 
+                       style.visibility !== 'hidden' && 
+                       style.opacity !== '0' &&
+                       rect.width > 0 && 
+                       rect.height > 0;
+            }
+            
+            // Helper function to detect modals and popups
+            function findVisibleModals() {
+                const modalSelectors = [
+                    '[role="dialog"]',
+                    '[role="alertdialog"]',
+                    '[aria-modal="true"]',
+                    '.modal:not(.modal-backdrop)',
+                    '.popup',
+                    '.dialog',
+                    '.overlay-content',
+                    '.lightbox',
+                    '.popover',
+                    '.tooltip[role="tooltip"]',
+                    '[class*="modal"][class*="open"]',
+                    '[class*="modal"][class*="show"]',
+                    '[class*="popup"][class*="open"]',
+                    '[class*="popup"][class*="show"]',
+                    '.MuiDialog-root', // Material-UI
+                    '.ant-modal-wrap', // Ant Design
+                    '.modal-content', // Bootstrap
+                    '[data-testid="modal"]',
+                    '[data-modal="true"]'
+                ];
+                
+                const modals = [];
+                
+                // Check each selector
+                modalSelectors.forEach(selector => {
+                    try {
+                        const elements = document.querySelectorAll(selector);
+                        elements.forEach(el => {
+                            if (isElementVisible(el) && !modals.some(m => m.element === el)) {
+                                // Get z-index to prioritize
+                                const zIndex = parseInt(window.getComputedStyle(el).zIndex) || 0;
+                                modals.push({ element: el, zIndex });
+                            }
+                        });
+                    } catch (e) {
+                        // Ignore selector errors
+                    }
+                });
+                
+                // Also check for high z-index elements that might be modals
+                const allElements = document.querySelectorAll('*');
+                allElements.forEach(el => {
+                    const style = window.getComputedStyle(el);
+                    const zIndex = parseInt(style.zIndex);
+                    
+                    if (zIndex > 999 && isElementVisible(el)) {
+                        // Check if it's likely a modal/popup based on size and position
+                        const rect = el.getBoundingClientRect();
+                        const isOverlay = (
+                            style.position === 'fixed' || style.position === 'absolute'
+                        ) && (
+                            rect.width > 200 && rect.height > 100
+                        );
+                        
+                        if (isOverlay && !modals.some(m => m.element === el)) {
+                            modals.push({ element: el, zIndex });
+                        }
+                    }
+                });
+                
+                // Sort by z-index (highest first)
+                return modals.sort((a, b) => b.zIndex - a.zIndex);
+            }
+            
+            // Extract content from a modal/popup
+            function extractModalContent(modal) {
+                const element = modal.element;
+                
+                // Try to find title
+                let title = '';
+                const titleSelectors = [
+                    '[role="heading"]',
+                    '.modal-title',
+                    '.modal-header h1, .modal-header h2, .modal-header h3',
+                    '.dialog-title',
+                    '.popup-title',
+                    'h1, h2, h3',
+                    '[class*="title"]'
+                ];
+                
+                for (const selector of titleSelectors) {
+                    const titleEl = element.querySelector(selector);
+                    if (titleEl) {
+                        title = titleEl.textContent.trim();
+                        if (title) break;
+                    }
+                }
+                
+                // Extract body content
+                let bodyContent = '';
+                const bodySelectors = [
+                    '.modal-body',
+                    '.dialog-content',
+                    '.popup-content',
+                    '[class*="content"]',
+                    'main',
+                    'article'
+                ];
+                
+                for (const selector of bodySelectors) {
+                    const bodyEl = element.querySelector(selector);
+                    if (bodyEl) {
+                        bodyContent = getTextContent(bodyEl);
+                        if (bodyContent.length > 50) break;
+                    }
+                }
+                
+                // If no specific body found, get all content
+                if (!bodyContent) {
+                    bodyContent = getTextContent(element);
+                }
+                
+                // Extract any form fields or interactive elements
+                const formData = [];
+                const inputs = element.querySelectorAll('input[type="text"], input[type="email"], textarea, select');
+                inputs.forEach(input => {
+                    const label = input.labels?.[0]?.textContent || 
+                                input.placeholder || 
+                                input.getAttribute('aria-label') || 
+                                input.name || '';
+                    if (label) {
+                        formData.push({
+                            label: label.trim(),
+                            value: input.value || '',
+                            type: input.tagName.toLowerCase()
+                        });
+                    }
+                });
+                
+                // Extract buttons/actions
+                const actions = [];
+                const buttons = element.querySelectorAll('button, [role="button"], input[type="submit"]');
+                buttons.forEach(btn => {
+                    const text = btn.textContent.trim();
+                    if (text && text.length < 50) {
+                        actions.push(text);
+                    }
+                });
+                
+                return {
+                    type: 'modal',
+                    title,
+                    content: bodyContent,
+                    formData,
+                    actions,
+                    zIndex: modal.zIndex
+                };
+            }
+            
+            // Get page title
             const title = document.title || '';
+            
+            // Get page URL
             const url = window.location.href;
             
+            // Extract visible modals/popups first
+            const visibleModals = findVisibleModals();
+            const modalContents = visibleModals.map(modal => extractModalContent(modal));
+            
+            // Try to find main content area
             let mainContent = '';
             const articleSelectors = config.selectors.article.split(', ');
             
@@ -1164,23 +1348,50 @@ async function extractWebviewContext(webview) {
                 const element = document.querySelector(selector);
                 if (element) {
                     mainContent = getTextContent(element);
-                    if (mainContent.length > 100) break;
+                    if (mainContent.length > 100) break; // Found substantial content
                 }
             }
             
+            // If no main content found, extract from body
             if (!mainContent) {
                 mainContent = getTextContent(document.body);
             }
             
+            // Extract headings for structure
+            const headings = Array.from(document.querySelectorAll(config.selectors.headings))
+                .filter(h => !h.closest(config.selectors.exclude))
+                .map(h => ({
+                    level: parseInt(h.tagName[1]),
+                    text: h.textContent.trim()
+                }))
+                .filter(h => h.text.length > 0);
+            
+            // Extract metadata
+            const metadata = {
+                description: document.querySelector('meta[name="description"]')?.content || '',
+                keywords: document.querySelector('meta[name="keywords"]')?.content || '',
+                author: document.querySelector('meta[name="author"]')?.content || ''
+            };
+            
+            // Truncate content if too long
             if (mainContent.length > config.maxLength) {
                 mainContent = mainContent.substring(0, config.maxLength) + '...';
             }
             
-            return { title, url, content: mainContent };
+            return {
+                title,
+                url,
+                content: mainContent,
+                headings,
+                metadata,
+                modals: modalContents,
+                hasActiveModals: modalContents.length > 0,
+                extractedAt: new Date().toISOString()
+            };
         })();
     `;
 
-    return await webview.executeJavaScript(script);
+    return await webview.executeJavaScript(ContentExtractorScript);
 }
 
 // Format context for AI
@@ -1189,7 +1400,49 @@ function formatContextForAI(context) {
 
     let formatted = `Page Title: ${context.title}\n`;
     formatted += `URL: ${context.url}\n\n`;
-    formatted += `Content:\n${context.content}`;
+
+    if (context.metadata?.description) {
+        formatted += `Description: ${context.metadata.description}\n\n`;
+    }
+
+    // Add modal/popup content if present
+    if (context.hasActiveModals && context.modals?.length > 0) {
+        formatted += '=== ACTIVE POPUPS/MODALS ===\n';
+        context.modals.forEach((modal, index) => {
+            formatted += `\nModal ${index + 1}${modal.title ? ': ' + modal.title : ''}\n`;
+            formatted += '-'.repeat(30) + '\n';
+
+            if (modal.content) {
+                formatted += 'Content: ' + modal.content.substring(0, 500);
+                if (modal.content.length > 500) formatted += '...';
+                formatted += '\n';
+            }
+
+            if (modal.formData && modal.formData.length > 0) {
+                formatted += '\nForm Fields:\n';
+                modal.formData.forEach(field => {
+                    formatted += `  - ${field.label}: ${field.value || '(empty)'}\n`;
+                });
+            }
+
+            if (modal.actions && modal.actions.length > 0) {
+                formatted += '\nAvailable Actions: ' + modal.actions.join(', ') + '\n';
+            }
+        });
+        formatted += '\n=== END OF POPUPS/MODALS ===\n\n';
+    }
+
+    if (context.headings && context.headings.length > 0) {
+        formatted += 'Page Structure:\n';
+        context.headings.forEach(h => {
+            const indent = '  '.repeat(h.level - 1);
+            formatted += `${indent}${h.text}\n`;
+        });
+        formatted += '\n';
+    }
+
+    formatted += 'Main Content:\n';
+    formatted += context.content;
 
     return formatted;
 }

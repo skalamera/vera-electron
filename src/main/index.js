@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, Menu, Tray, nativeImage, shell, session } = require('electron');
+const { app, BrowserWindow, ipcMain, Menu, Tray, nativeImage, shell, session, clipboard } = require('electron');
 const path = require('path');
 const fs = require('fs').promises;
 const windowStateKeeper = require('electron-window-state');
@@ -67,7 +67,8 @@ function createMainWindow() {
 
     // Open DevTools in development
     if (process.env.NODE_ENV === 'development' || process.argv.includes('--dev')) {
-        mainWindow.webContents.openDevTools();
+
+        mainWindow.webContents.openDevTools({ mode: 'detach' });
     }
 
     // Show window when ready
@@ -148,7 +149,7 @@ function createSpaceWindow(space) {
 
     // Open DevTools in development
     if (process.env.NODE_ENV === 'development' || process.argv.includes('--dev')) {
-        spaceWindow.webContents.openDevTools();
+        spaceWindow.webContents.openDevTools({ mode: 'detach' });
     }
 
     // Show window when ready
@@ -744,6 +745,48 @@ function setupIpcHandlers() {
                 error: error.message
             });
         }
+    });
+
+    // Add IPC handler for webview context menu
+    ipcMain.handle('show-webview-context-menu', async (event, params) => {
+        console.log('[main] show-webview-context-menu IPC handler called with params:', params);
+        const { x, y, tagName, isEditable } = params;
+        const template = [];
+
+        // Standard browser-like context menu
+        if (isEditable) {
+            template.push(
+                { role: 'undo' },
+                { role: 'redo' },
+                { type: 'separator' },
+                { role: 'cut' },
+                { role: 'copy' },
+                { role: 'paste' },
+                { role: 'selectAll' },
+            );
+        } else {
+            template.push(
+                { role: 'copy' },
+                { type: 'separator' },
+                { role: 'selectAll' },
+            );
+        }
+
+        // Separator for future custom options
+        template.push({ type: 'separator' });
+        // Example custom option (disabled for now)
+        // template.push({ label: 'Custom Option', enabled: false });
+
+        const menu = Menu.buildFromTemplate(template);
+        // Show the menu at the requested coordinates
+        const win = BrowserWindow.fromWebContents(event.sender);
+        console.log('[main] Showing context menu at', { x, y }, 'for tag', tagName, 'isEditable:', isEditable);
+        menu.popup({
+            window: win,
+            x: x,
+            y: y
+        });
+        console.log('[main] Context menu popup triggered');
     });
 }
 

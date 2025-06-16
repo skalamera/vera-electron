@@ -1,12 +1,17 @@
 // Vera AI Webview Injection Script Generator
 const fs = require('fs');
 const path = require('path');
+const ContentExtractor = require('./content-extractor');
 
 // Generate the injection script with widget code and styles
 function generateInjectionScript() {
     // Read widget script and styles
     const widgetScript = fs.readFileSync(path.join(__dirname, 'widget.js'), 'utf8');
     const widgetStyles = fs.readFileSync(path.join(__dirname, 'widget.css'), 'utf8');
+
+    // Get the content extraction script from ContentExtractor
+    const contentExtractor = new ContentExtractor();
+    const extractionScript = contentExtractor.extractPageContent();
 
     // Generate the complete injection script
     const injectionScript = `
@@ -29,70 +34,20 @@ function generateInjectionScript() {
 
     // Communication with parent window
     veraWidget.onSendMessage = (message) => {
+        // Extract page context including modals
+        const extractPageContext = function() {
+            return ${extractionScript};
+        };
+        
+        const context = extractPageContext();
+        
         // Send message to parent window
         window.parent.postMessage({
             type: 'vera-ai-message',
             message: message,
-            context: extractPageContext()
+            context: context
         }, '*');
     };
-
-    // Extract page context
-    function extractPageContext() {
-        const config = {
-            maxLength: 10000,
-            selectors: {
-                article: 'article, main, [role="main"], #main-content, .main-content',
-                headings: 'h1, h2, h3, h4, h5, h6',
-                paragraphs: 'p',
-                lists: 'ul, ol',
-                exclude: 'script, style, nav, header, footer, aside, .ad, .advertisement, .sidebar'
-            }
-        };
-
-        // Helper function to get text content
-        function getTextContent(element) {
-            if (!element) return '';
-            
-            const clone = element.cloneNode(true);
-            const excludeSelectors = config.selectors.exclude;
-            clone.querySelectorAll(excludeSelectors).forEach(el => el.remove());
-            
-            return clone.textContent.trim();
-        }
-        
-        // Get page title and URL
-        const title = document.title || '';
-        const url = window.location.href;
-        
-        // Try to find main content area
-        let mainContent = '';
-        const articleSelectors = config.selectors.article.split(', ');
-        
-        for (const selector of articleSelectors) {
-            const element = document.querySelector(selector);
-            if (element) {
-                mainContent = getTextContent(element);
-                if (mainContent.length > 100) break;
-            }
-        }
-        
-        // If no main content found, extract from body
-        if (!mainContent) {
-            mainContent = getTextContent(document.body);
-        }
-        
-        // Truncate if too long
-        if (mainContent.length > config.maxLength) {
-            mainContent = mainContent.substring(0, config.maxLength) + '...';
-        }
-        
-        return {
-            title,
-            url,
-            content: mainContent
-        };
-    }
 
     // Listen for responses from parent
     window.addEventListener('message', (event) => {
