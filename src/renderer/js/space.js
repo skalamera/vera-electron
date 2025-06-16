@@ -1141,7 +1141,9 @@ async function extractWebviewContext(webview) {
             const config = {
                 maxLength: 10000,
                 selectors: {
-                    exclude: 'script, style, nav, header, footer, aside, .ad, .advertisement, .sidebar, [aria-hidden="true"]',
+                    article: 'article, main, [role="main"], #main-content, .main-content',
+                    headings: 'h1, h2, h3, h4, h5, h6',
+                    exclude: 'script, style, nav, header, footer, aside, .ad, .advertisement, .sidebar'
                 }
             };
 
@@ -1149,21 +1151,26 @@ async function extractWebviewContext(webview) {
                 if (!element) return '';
                 const clone = element.cloneNode(true);
                 clone.querySelectorAll(config.selectors.exclude).forEach(el => el.remove());
-                // Handle common interactive elements that might contain text but are not simple text nodes
-                clone.querySelectorAll('input, textarea, select').forEach(input => {
-                    if (input.value) {
-                        input.textContent = input.value; // Use value for input fields
-                    }
-                });
                 return clone.textContent.trim();
             }
 
             const title = document.title || '';
             const url = window.location.href;
             
-            // Attempt to get the most relevant content, prioritizing visible elements.
-            // For modals and overlays, innerText of the body might be the most reliable.
-            let mainContent = getTextContent(document.body);
+            let mainContent = '';
+            const articleSelectors = config.selectors.article.split(', ');
+            
+            for (const selector of articleSelectors) {
+                const element = document.querySelector(selector);
+                if (element) {
+                    mainContent = getTextContent(element);
+                    if (mainContent.length > 100) break;
+                }
+            }
+            
+            if (!mainContent) {
+                mainContent = getTextContent(document.body);
+            }
             
             if (mainContent.length > config.maxLength) {
                 mainContent = mainContent.substring(0, config.maxLength) + '...';
