@@ -33,6 +33,19 @@ contextBridge.exposeInMainWorld('veraAPI', {
     // Custom icon handling
     saveCustomIcon: (filename, data) => ipcRenderer.invoke('save-custom-icon', filename, data),
 
+    // ChatGPT integration
+    getChatGPTResponse: (message) => ipcRenderer.invoke('get-chatgpt-response', message),
+
+    // Vera AI integration
+    getVeraAISettings: () => ipcRenderer.invoke('get-vera-ai-settings'),
+    onVeraAIUpdate: (callback) => {
+        ipcRenderer.on('vera-ai-update', (event, settings) => callback(settings));
+    },
+    onVeraAIProcessMessage: (callback) => {
+        ipcRenderer.on('vera-ai-process-message', (event, data) => callback(data));
+    },
+    sendChatMessage: (message) => ipcRenderer.invoke('send-chat-message', message),
+
     // System info
     platform: process.platform,
 
@@ -42,7 +55,7 @@ contextBridge.exposeInMainWorld('veraAPI', {
     },
 
     onShowPreferences: (callback) => {
-        ipcRenderer.on('show-preferences', callback);
+        ipcRenderer.on('show-preferences', () => callback());
     },
 
     onThemeUpdate: (callback) => {
@@ -53,4 +66,4 @@ contextBridge.exposeInMainWorld('veraAPI', {
     removeAllListeners: (channel) => {
         ipcRenderer.removeAllListeners(channel);
     }
-}); 
+});

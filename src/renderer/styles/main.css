@@ -799,6 +799,177 @@ webview {
     font-weight: 500;
 }
 
+/* Vera Chatbot Styles */
+.vera-chatbot {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 350px;
+    height: 500px;
+    background: var(--background-color);
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    display: flex;
+    flex-direction: column;
+    z-index: 1000;
+    border: 1px solid var(--border-color);
+}
+
+.vera-chatbot-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--background-color);
+    border-radius: 12px 12px 0 0;
+}
+
+.vera-chatbot-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.vera-avatar {
+    width: 24px;
+    height: 24px;
+}
+
+.vera-minimize-btn {
+    background: none;
+    border: none;
+    color: var(--text-color);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.vera-minimize-btn:hover {
+    background: var(--hover-color);
+}
+
+.vera-chatbot-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.vera-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.vera-message {
+    max-width: 85%;
+    padding: 12px;
+    border-radius: 12px;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.vera-message-bot {
+    align-self: flex-start;
+    background: var(--hover-color);
+    color: var(--text-color);
+}
+
+.vera-message-user {
+    align-self: flex-end;
+    background: var(--primary-color);
+    color: white;
+}
+
+.vera-message-content {
+    word-wrap: break-word;
+}
+
+.vera-input-container {
+    padding: 12px;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    gap: 8px;
+    align-items: flex-end;
+}
+
+.vera-input {
+    flex: 1;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 8px 12px;
+    resize: none;
+    font-family: inherit;
+    font-size: 14px;
+    line-height: 1.5;
+    background: var(--background-color);
+    color: var(--text-color);
+    max-height: 120px;
+    min-height: 40px;
+}
+
+.vera-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
+.vera-send-btn {
+    background: var(--primary-color);
+    border: none;
+    border-radius: 8px;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: white;
+    transition: background-color 0.2s;
+}
+
+.vera-send-btn:hover {
+    background: var(--primary-color-dark);
+}
+
+.vera-send-btn:disabled {
+    background: var(--border-color);
+    cursor: not-allowed;
+}
+
+/* Dark theme adjustments */
+[data-theme="dark"] .vera-chatbot {
+    background: var(--dark-background);
+    border-color: var(--dark-border);
+}
+
+[data-theme="dark"] .vera-chatbot-header {
+    background: var(--dark-background);
+    border-color: var(--dark-border);
+}
+
+[data-theme="dark"] .vera-message-bot {
+    background: var(--dark-hover);
+}
+
+[data-theme="dark"] .vera-input {
+    background: var(--dark-background);
+    border-color: var(--dark-border);
+    color: var(--dark-text);
+}
+
+[data-theme="dark"] .vera-input:focus {
+    border-color: var(--primary-color);
+}
+
 /* Version Info */
 .version-info {
     padding: 0 16px;
@@ -1546,4 +1717,43 @@ body.dark-theme .pod-list-card:focus {
 
 .installed-apps-info {
     margin-left: 32px;
+}
+
+.api-key-input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background-color: var(--input-bg);
+    color: var(--text-color);
+    font-family: var(--font-family);
+    font-size: 14px;
+    margin-top: 4px;
+    transition: border-color 0.2s ease;
+}
+
+.api-key-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px var(--primary-color-alpha);
+}
+
+.api-key-input::placeholder {
+    color: var(--text-muted);
+}
+
+/* Dark theme adjustments */
+.dark-theme .api-key-input {
+    background-color: var(--dark-input-bg);
+    border-color: var(--dark-border-color);
+    color: var(--dark-text-color);
+}
+
+.dark-theme .api-key-input:focus {
+    border-color: var(--dark-primary-color);
+    box-shadow: 0 0 0 2px var(--dark-primary-color-alpha);
+}
+
+.dark-theme .api-key-input::placeholder {
+    color: var(--dark-text-muted);
 }

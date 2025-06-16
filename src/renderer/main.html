@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:;">
+        content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://api.openai.com;">
     <title>Vera Desktop</title>
     <link rel="stylesheet" href="styles/main.css">
 </head>
@@ -260,6 +260,35 @@
                                     Global Ad Blocking
                                 </label>
                                 <p class="setting-description">Block ads across all pods by default</p>
+                            </div>
+                        </div>
+
+                        <div class="settings-section">
+                            <h3>Vera AI Assistant</h3>
+                            <div class="setting-item">
+                                <label>
+                                    <input type="checkbox" id="vera-ai-enabled-checkbox">
+                                    Enable Vera AI
+                                </label>
+                                <p class="setting-description">Enable the AI assistant to help you navigate and
+                                    understand web content</p>
+                            </div>
+                            <div class="setting-item">
+                                <label for="vera-ai-api-key">OpenAI API Key</label>
+                                <input type="password" id="vera-ai-api-key" placeholder="sk-..." class="api-key-input">
+                                <p class="setting-description">Get your API key from <a href="#"
+                                        onclick="window.veraAPI.openExternal('https://platform.openai.com/api-keys'); return false;">OpenAI
+                                        Platform</a></p>
+                            </div>
+                            <div class="setting-item">
+                                <label for="vera-ai-model">AI Model</label>
+                                <select id="vera-ai-model" class="model-select">
+                                    <option value="gpt-4-turbo-preview">GPT-4 Turbo (Recommended)</option>
+                                    <option value="gpt-4">GPT-4</option>
+                                    <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                                </select>
+                                <p class="setting-description">Choose the AI model for Vera. GPT-4 provides better
+                                    understanding but costs more.</p>
                             </div>
                         </div>
 

@@ -5,13 +5,18 @@ const windowStateKeeper = require('electron-window-state');
 const _contextMenu = require('electron-context-menu');
 const contextMenu = _contextMenu.default || _contextMenu;
 const { v4: uuidv4 } = require('uuid');
+const OpenAI = require('openai');
+const Store = require('electron-store');
+
+// Initialize store
+let store = new Store();
 
 // Global references
 let mainWindow; // Main space management window
 let spaceWindows = new Map(); // Map of spaceId -> BrowserWindow
 let tray;
 let spaces = new Map();
-let store; // Will be initialized asynchronously
+let openai; // OpenAI API client
 
 // Enable sandbox for all renderer processes
 app.enableSandbox();
@@ -22,7 +27,8 @@ const DEFAULT_SETTINGS = {
     theme: 'light',
     adBlockEnabled: true,
     syncEnabled: false,
-    language: 'en'
+    language: 'en',
+    openaiApiKey: '' // Add OpenAI API key to settings
 };
 
 // Create the main space management window
@@ -180,7 +186,9 @@ function createSpace(config) {
             notifications: true,
             lockEnabled: false
         },
-        createdAt: Date.now()
+        createdAt: Date.now(),
+        personalData: config.personalData || '', // New field for personal data
+        chatbotType: config.chatbotType || 'generic' // New field for specialized chatbot type
     };
 
     spaces.set(spaceId, spaceConfig);
@@ -293,7 +301,7 @@ async function initializeStore() {
     }
 }
 
-// IPC Handlers
+// Set up IPC handlers
 function setupIpcHandlers() {
     console.log('Setting up IPC handlers...');
 
@@ -462,6 +470,67 @@ function setupIpcHandlers() {
         ];
     });
 
+    // ChatGPT integration
+    ipcMain.handle('get-chatgpt-response', async (event, payload) => {
+        try {
+            const settings = store.get('settings');
+            const apiKey = settings.openaiApiKey;
+
+            if (!apiKey) {
+                throw new Error('OpenAI API key not configured');
+            }
+
+            // Initialize OpenAI client if not already done
+            if (!openai) {
+                openai = new OpenAI({
+                    apiKey: apiKey
+                });
+            }
+
+            // Support both string and object payloads for backward compatibility
+            let messages;
+            if (typeof payload === 'object' && payload.context) {
+                messages = [
+                    {
+                        role: "system",
+                        content: `You are Vera, a helpful AI assistant integrated into the Vera Desktop application.\nYou provide concise, accurate, and friendly responses to help users with their tasks.\nWhen the user asks about the current page or email, use the provided context below to answer.\nIf the context is not relevant to the question, you can ignore it and provide a general response.\nKeep your responses focused and helpful, and if you're not sure about something, say so.`
+                    },
+                    {
+                        role: "user",
+                        content: payload.context
+                    },
+                    {
+                        role: "user",
+                        content: payload.user
+                    }
+                ];
+            } else {
+                messages = [
+                    {
+                        role: "system",
+                        content: `You are Vera, a helpful AI assistant integrated into the Vera Desktop application.\nYou provide concise, accurate, and friendly responses to help users with their tasks.\nWhen the user asks about the current page or email, use the provided context below to answer.\nIf the context is not relevant to the question, you can ignore it and provide a general response.\nKeep your responses focused and helpful, and if you're not sure about something, say so.`
+                    },
+                    {
+                        role: "user",
+                        content: typeof payload === 'string' ? payload : ''
+                    }
+                ];
+            }
+
+            const completion = await openai.chat.completions.create({
+                model: "gpt-3.5-turbo",
+                messages,
+                max_tokens: 300,
+                temperature: 0.7
+            });
+
+            return completion.choices[0].message.content;
+        } catch (error) {
+            console.error('Error getting ChatGPT response:', error);
+            throw error;
+        }
+    });
+
     // Settings
     ipcMain.handle('update-settings', (event, updates) => {
         const settings = store.get('settings');
@@ -503,6 +572,90 @@ function setupIpcHandlers() {
         } catch (error) {
             console.error('Error saving custom icon:', error);
             throw error;
+        }
+    });
+
+    // Vera AI handlers
+    ipcMain.handle('get-vera-ai-settings', async () => {
+        const settings = store.get('settings');
+        return settings.veraAI || { enabled: false, apiKey: '', model: 'gpt-4-turbo-preview' };
+    });
+
+    // Handle Vera AI message
+    ipcMain.handle('send-chat-message', async (event, messageData) => {
+        try {
+            const settings = store.get('settings');
+            if (!settings.veraAI?.enabled || !settings.veraAI?.apiKey) {
+                throw new Error('Vera AI is not enabled or API key is missing');
+            }
+
+            // Initialize OpenAI client if not already initialized
+            if (!openai) {
+                openai = new OpenAI({
+                    apiKey: settings.veraAI.apiKey
+                });
+            }
+
+            // Prepare messages
+            let messages;
+            if (typeof messageData === 'object' && messageData.context) {
+                messages = [
+                    {
+                        role: "system",
+                        content: `You are Vera, a helpful AI assistant integrated into the Vera Desktop application.\nYou provide concise, accurate, and friendly responses to help users with their tasks.\nWhen the user asks about the current page or email, use the provided context below to answer.\nIf the context is not relevant to the question, you can ignore it and provide a general response.\nKeep your responses focused and helpful, and if you're not sure about something, say so.`
+                    },
+                    {
+                        role: "user",
+                        content: messageData.context
+                    },
+                    {
+                        role: "user",
+                        content: messageData.user
+                    }
+                ];
+            } else {
+                messages = [
+                    {
+                        role: "system",
+                        content: `You are Vera, a helpful AI assistant integrated into the Vera Desktop application.\nYou provide concise, accurate, and friendly responses to help users with their tasks.\nWhen the user asks about the current page or email, use the provided context below to answer.\nIf the context is not relevant to the question, you can ignore it and provide a general response.\nKeep your responses focused and helpful, and if you're not sure about something, say so.`
+                    },
+                    {
+                        role: "user",
+                        content: typeof messageData === 'string' ? messageData : ''
+                    }
+                ];
+            }
+
+            const completion = await openai.chat.completions.create({
+                model: settings.veraAI.model || 'gpt-4-turbo-preview',
+                messages,
+                max_tokens: 2000,
+                temperature: 0.7,
+                stream: true
+            });
+
+            // Handle streaming response
+            for await (const chunk of completion) {
+                const content = chunk.choices[0]?.delta?.content || '';
+                if (content) {
+                    event.sender.send('vera-ai-response', {
+                        type: 'chunk',
+                        content
+                    });
+                }
+            }
+
+            // Send completion message
+            event.sender.send('vera-ai-response', {
+                type: 'complete'
+            });
+
+        } catch (error) {
+            console.error('Error processing Vera AI message:', error);
+            event.sender.send('vera-ai-response', {
+                type: 'error',
+                error: error.message
+            });
         }
     });
 }

@@ -21,8 +21,168 @@ document.addEventListener('DOMContentLoaded', async () => {
     updateAppsCount();
     renderHomeView();
 
+    // Initialize Vera AI if enabled
+    await initializeMainPageVeraAI();
+
     console.log('Main window initialized');
 });
+
+// Initialize Vera AI for main page
+async function initializeMainPageVeraAI() {
+    console.log('[Vera Debug] initializeMainPageVeraAI called');
+    try {
+        const settings = await window.veraAPI.getSettings();
+        console.log('[Vera Debug] Vera settings:', settings.veraAI);
+        if (settings.veraAI?.enabled && settings.veraAI?.apiKey) {
+            // Load Vera AI widget
+            const widgetScript = document.createElement('script');
+            widgetScript.src = '../vera-ai/widget.js';
+            widgetScript.onload = () => {
+                setTimeout(() => {
+                    if (window.VeraWidget) {
+                        if (!document.getElementById('vera-ai-widget')) {
+                            console.log('[Vera Debug] VeraWidget class found');
+                            window.veraWidget = new window.VeraWidget();
+                            window.veraWidget.createWidget();
+                            console.log('[Vera Debug] VeraWidget created');
+                            // Set up message handler
+                            window.veraWidget.onSendMessage = async (message) => {
+                                handleMainPageVeraAIMessage(message, settings.veraAI.apiKey);
+                            };
+                        } else {
+                            console.warn('[Vera Debug] Widget already exists, skipping creation.');
+                        }
+                    } else {
+                        console.error('[Vera Debug] VeraWidget class NOT found after script load');
+                    }
+                }, 100);
+            };
+            widgetScript.onerror = (e) => console.error('[Vera Debug] Failed to load widget.js', e);
+            document.head.appendChild(widgetScript);
+
+            const widgetStyles = document.createElement('link');
+            widgetStyles.rel = 'stylesheet';
+            widgetStyles.href = '../vera-ai/widget.css';
+            widgetStyles.onload = () => console.log('[Vera Debug] widget.css loaded');
+            widgetStyles.onerror = (e) => console.error('[Vera Debug] Failed to load widget.css', e);
+            document.head.appendChild(widgetStyles);
+        } else {
+            console.log('[Vera Debug] Vera AI not enabled or API key missing');
+        }
+    } catch (error) {
+        console.error('Error initializing Vera AI:', error);
+    }
+}
+
+// Handle Vera AI message from main page
+async function handleMainPageVeraAIMessage(message, apiKey) {
+    try {
+        // Start streaming response
+        window.veraWidget.startStreamingResponse();
+
+        // For main page, we don't have specific page context
+        // But we can provide context about the Vera Desktop app
+        const context = `
+You are in the Vera Desktop application main page. This is an Electron-based application that allows users to:
+- Create "Pods" (workspaces) to organize web applications
+- Add web applications to these pods
+- Keep different accounts and settings separate between pods
+- Browse an app catalog with popular web services
+- Manage settings like theme, ad blocking, and more
+
+The user might ask about how to use the application, create pods, add apps, or general questions.
+`;
+
+        // Call OpenAI API
+        const response = await callOpenAI(message, context, apiKey);
+
+        // Stream response
+        for await (const chunk of streamOpenAIResponse(response)) {
+            window.veraWidget.updateStreamingResponse(chunk);
+        }
+
+        window.veraWidget.finishStreamingResponse();
+    } catch (error) {
+        console.error('Error processing Vera AI message:', error);
+        window.veraWidget.addMessage('assistant', 'Sorry, I encountered an error. Please check your API key and try again.');
+        window.veraWidget.finishStreamingResponse();
+    }
+}
+
+// Call OpenAI API (shared with space.js)
+async function callOpenAI(message, context, apiKey) {
+    const messages = [
+        {
+            role: 'system',
+            content: `You are Vera, a helpful AI assistant integrated into the Vera Desktop application. ${context}`
+        },
+        {
+            role: 'user',
+            content: message
+        }
+    ];
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+            model: 'gpt-4-turbo-preview',
+            messages: messages,
+            max_tokens: 2000,
+            temperature: 0.7,
+            stream: true
+        })
+    });
+
+    if (!response.ok) {
+        throw new Error(`OpenAI API error: ${response.status}`);
+    }
+
+    return response;
+}
+
+// Stream OpenAI response (shared with space.js)
+async function* streamOpenAIResponse(response) {
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let fullResponse = '';
+
+    try {
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || '';
+
+            for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                    const data = line.slice(6);
+                    if (data === '[DONE]') {
+                        return;
+                    }
+                    try {
+                        const parsed = JSON.parse(data);
+                        const content = parsed.choices?.[0]?.delta?.content;
+                        if (content) {
+                            fullResponse += content;
+                            yield fullResponse;
+                        }
+                    } catch (e) {
+                        // Ignore parsing errors
+                    }
+                }
+            }
+        }
+    } finally {
+        reader.releaseLock();
+    }
+}
 
 // Set up event listeners
 function setupEventListeners() {
@@ -81,6 +241,19 @@ function setupEventListeners() {
 
     document.getElementById('sync-enabled-checkbox')?.addEventListener('change', (e) => {
         updateSyncEnabled(e.target.checked);
+    });
+
+    // Vera AI settings
+    document.getElementById('vera-ai-enabled-checkbox')?.addEventListener('change', (e) => {
+        updateVeraAIEnabled(e.target.checked);
+    });
+
+    document.getElementById('vera-ai-api-key')?.addEventListener('input', (e) => {
+        // Optional: Add validation or real-time feedback
+    });
+
+    document.getElementById('vera-ai-model')?.addEventListener('change', (e) => {
+        // Optional: Add model change handling
     });
 
     // Save settings button
@@ -481,6 +654,22 @@ async function loadSettings() {
         if (globalAdBlockCheckbox) {
             globalAdBlockCheckbox.checked = settings.adBlockEnabled || false;
         }
+
+        // Vera AI settings
+        const veraAIEnabledCheckbox = document.getElementById('vera-ai-enabled-checkbox');
+        if (veraAIEnabledCheckbox) {
+            veraAIEnabledCheckbox.checked = settings.veraAI?.enabled || false;
+        }
+
+        const veraAIApiKey = document.getElementById('vera-ai-api-key');
+        if (veraAIApiKey) {
+            veraAIApiKey.value = settings.veraAI?.apiKey || '';
+        }
+
+        const veraAIModel = document.getElementById('vera-ai-model');
+        if (veraAIModel) {
+            veraAIModel.value = settings.veraAI?.model || 'gpt-4-turbo-preview';
+        }
     } catch (error) {
         console.error('Error loading settings:', error);
     }
@@ -516,17 +705,42 @@ async function updateSyncEnabled(enabled) {
     }
 }
 
+// Update Vera AI enabled setting
+async function updateVeraAIEnabled(enabled) {
+    try {
+        // Get current settings to preserve API key and model
+        const settings = await window.veraAPI.getSettings();
+        await window.veraAPI.updateSettings({
+            veraAI: {
+                ...settings.veraAI,
+                enabled: enabled
+            }
+        });
+        console.log('Vera AI enabled updated:', enabled);
+    } catch (error) {
+        console.error('Error updating Vera AI enabled:', error);
+    }
+}
+
 // Save all settings
 async function saveAllSettings() {
     try {
         const darkThemeCheckbox = document.getElementById('dark-theme-checkbox');
         const syncEnabledCheckbox = document.getElementById('sync-enabled-checkbox');
         const globalAdBlockCheckbox = document.getElementById('global-adblock-checkbox');
+        const veraAIEnabledCheckbox = document.getElementById('vera-ai-enabled-checkbox');
+        const veraAIApiKey = document.getElementById('vera-ai-api-key');
+        const veraAIModel = document.getElementById('vera-ai-model');
 
         const settings = {
             theme: darkThemeCheckbox?.checked ? 'dark' : 'light',
             syncEnabled: syncEnabledCheckbox?.checked || false,
-            adBlockEnabled: globalAdBlockCheckbox?.checked || false
+            adBlockEnabled: globalAdBlockCheckbox?.checked || false,
+            veraAI: {
+                enabled: veraAIEnabledCheckbox?.checked || false,
+                apiKey: veraAIApiKey?.value || '',
+                model: veraAIModel?.value || 'gpt-4-turbo-preview'
+            }
         };
 
         await window.veraAPI.updateSettings(settings);

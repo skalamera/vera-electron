@@ -4,6 +4,10 @@ let subspaces = [];
 let activeSubspace = null;
 let appCatalog = [];
 let webviewsMap = new Map(); // Store webviews by subspace ID
+let veraAIEnabled = false;
+let veraAISettings = null;
+let veraAIInitialized = false;
+window.veraWidgetCreated = false;
 
 // Initialize the space window
 document.addEventListener('DOMContentLoaded', async () => {
@@ -15,8 +19,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Load app catalog
     await loadAppCatalog();
 
+    // Fetch Vera AI settings and set veraAIEnabled
+    veraAISettings = await window.veraAPI.getVeraAISettings();
+    veraAIEnabled = veraAISettings.enabled && veraAISettings.apiKey;
+
     // Load and apply theme settings
     await applyInitialTheme();
+
+    // Initialize Vera AI
+    await initializeVeraAI();
 
     // Navigation bar buttons
     const navBar = document.getElementById('webview-nav-bar');
@@ -498,7 +509,13 @@ function showOrCreateWebview(subspace) {
 
         // Add event listeners
         webview.addEventListener('dom-ready', () => {
-            console.log('Webview loaded:', subspace.name);
+            console.log('Webview DOM ready:', subspace.name);
+
+            // Inject Vera AI if enabled
+            if (veraAIEnabled) {
+                console.log('[Vera Debug] Attempting to inject Vera AI into webview:', subspace.name);
+                injectVeraAIIntoWebview(webview);
+            }
         });
 
         webview.addEventListener('page-title-updated', (e) => {
@@ -663,7 +680,7 @@ function switchTab(tabName) {
         activeContent.classList.add('active');
         activeContent.style.display = 'block';
         // Focus first input if custom tab
-        if (tabName === '                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                custom') {
+        if (tabName === 'custom') {
             const firstInput = activeContent.querySelector('input[type="text"]');
             if (firstInput) {
                 setTimeout(() => {
@@ -729,6 +746,17 @@ function showSpaceSettings() {
                            style="width: 100%; height: 40px; border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer;">
                 </div>
                 <div class="form-group">
+                    <label for="space-chatbot-type-edit">Chatbot Type</label>
+                    <select id="space-chatbot-type-edit" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 14px;">
+                        <option value="generic" ${currentSpace.chatbotType === 'generic' ? 'selected' : ''}>Generic</option>
+                        <option value="job_search" ${currentSpace.chatbotType === 'job_search' ? 'selected' : ''}>Job Search</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="space-personal-data-edit">Personal Data (for AI context)</label>
+                    <textarea id="space-personal-data-edit" rows="6" placeholder="Enter any personal data or context Vera should remember for this Pod (e.g., your resume, project details, personal preferences). This data is local to this Pod and will be used to enhance AI responses.">${currentSpace.personalData || ''}</textarea>
+                </div>
+                <div class="form-group">
                     <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
                         <input type="checkbox" id="space-adblock-edit" ${currentSpace.settings?.adBlockEnabled ? 'checked' : ''}>
                         Enable Ad Blocking
@@ -757,13 +785,17 @@ async function saveSpaceSettings() {
     const nameInput = document.getElementById('space-name-edit');
     const colorInput = document.getElementById('space-color-edit');
     const adBlockInput = document.getElementById('space-adblock-edit');
+    const personalDataInput = document.getElementById('space-personal-data-edit');
+    const chatbotTypeSelect = document.getElementById('space-chatbot-type-edit');
 
-    if (!nameInput || !colorInput || !currentSpace) return;
+    if (!nameInput || !colorInput || !personalDataInput || !chatbotTypeSelect || !currentSpace) return;
 
     try {
         const updates = {
             name: nameInput.value.trim(),
             color: colorInput.value,
+            personalData: personalDataInput.value.trim(),
+            chatbotType: chatbotTypeSelect.value,
             settings: {
                 ...currentSpace.settings,
                 adBlockEnabled: adBlockInput.checked
@@ -918,4 +950,266 @@ window.addEventListener('DOMContentLoaded', () => {
         themeToggleBtn.addEventListener('click', toggleTheme);
         setThemeToggleIcon(document.body.classList.contains('dark-theme'));
     }
-}); 
+});
+
+// Add Vera AI initialization function
+async function initializeVeraAI() {
+    console.log('[Vera Debug] initializeVeraAI called');
+
+    // Prevent multiple initializations
+    if (veraAIInitialized || window.veraWidgetCreated) {
+        console.log('[Vera Debug] Vera AI already initialized (flag or global), skipping');
+        return;
+    }
+
+    try {
+        // Get Vera AI settings
+        veraAISettings = await window.veraAPI.getVeraAISettings();
+        veraAIEnabled = veraAISettings.enabled && veraAISettings.apiKey;
+
+        if (veraAIEnabled) {
+            // Load Vera AI widget
+            const widgetScript = document.createElement('script');
+            widgetScript.src = '../vera-ai/widget.js';
+            widgetScript.onload = () => {
+                setTimeout(() => {
+                    if (window.VeraWidget) {
+                        // Remove any existing widget
+                        const existingWidget = document.getElementById('vera-ai-widget');
+                        if (existingWidget) {
+                            console.warn('[Vera Debug] Existing Vera AI widget found, removing before creating new one.');
+                            existingWidget.remove();
+                        }
+                        if (!window.veraWidgetCreated) {
+                            console.log('[Vera Debug] VeraWidget class found, creating widget');
+                            window.veraWidget = new window.VeraWidget();
+                            window.veraWidget.createWidget();
+                            window.veraWidgetCreated = true;
+                            console.log('[Vera Debug] VeraWidget created and global flag set');
+                            // Set up message handler
+                            window.veraWidget.onSendMessage = async (message) => {
+                                handleVeraAIMessage(message);
+                            };
+                            veraAIInitialized = true;
+                        } else {
+                            console.warn('[Vera Debug] Widget already created (global flag), skipping creation.');
+                            veraAIInitialized = true;
+                        }
+                    } else {
+                        console.error('[Vera Debug] VeraWidget class NOT found after script load');
+                    }
+                }, 100);
+            };
+            widgetScript.onerror = (e) => console.error('[Vera Debug] Failed to load widget.js', e);
+            document.head.appendChild(widgetScript);
+
+            const widgetStyles = document.createElement('link');
+            widgetStyles.rel = 'stylesheet';
+            widgetStyles.href = '../vera-ai/widget.css';
+            widgetStyles.onload = () => console.log('[Vera Debug] widget.css loaded');
+            widgetStyles.onerror = (e) => console.error('[Vera Debug] Failed to load widget.css', e);
+            document.head.appendChild(widgetStyles);
+        }
+
+        // Listen for Vera AI updates
+        window.veraAPI.onVeraAIUpdate((settings) => {
+            veraAISettings = settings;
+            veraAIEnabled = settings.enabled && settings.apiKey;
+            // Could refresh widget here if needed
+        });
+
+        // Listen for message processing
+        window.veraAPI.onVeraAIProcessMessage(async (data) => {
+            if (window.veraWidget) {
+                if (data.type === 'chunk') {
+                    window.veraWidget.updateStreamingResponse(data.content);
+                } else if (data.type === 'complete') {
+                    window.veraWidget.finishStreamingResponse();
+                } else if (data.type === 'error') {
+                    window.veraWidget.addMessage('assistant', `Sorry, I encountered an error: ${data.error}`);
+                    window.veraWidget.finishStreamingResponse();
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Error initializing Vera AI:', error);
+    }
+}
+
+// Handle Vera AI message from main window
+async function handleVeraAIMessage(message) {
+    try {
+        // Start streaming response
+        window.veraWidget.startStreamingResponse();
+
+        // Get active webview context if available
+        let context = null;
+        if (activeSubspace) {
+            const webview = webviewsMap.get(activeSubspace.id);
+            if (webview) {
+                try {
+                    context = await extractWebviewContext(webview);
+                } catch (error) {
+                    console.error('Error extracting webview context:', error);
+                }
+            }
+        }
+
+        let fullContext = context ? formatContextForAI(context) : '';
+        if (currentSpace && currentSpace.personalData) {
+            fullContext += `\n\nPersonal Data for this Pod:\n${currentSpace.personalData}`;
+        }
+
+        // Call OpenAI API
+        const response = await callOpenAI(message, fullContext, veraAISettings.apiKey);
+
+        // Stream response
+        for await (const chunk of streamOpenAIResponse(response)) {
+            window.veraWidget.updateStreamingResponse(chunk);
+        }
+
+        window.veraWidget.finishStreamingResponse();
+    } catch (error) {
+        console.error('Error processing Vera AI message:', error);
+        window.veraWidget.addMessage('assistant', 'Sorry, I encountered an error. Please check your API key and try again.');
+        window.veraWidget.finishStreamingResponse();
+    }
+}
+
+// Extract context from webview
+async function extractWebviewContext(webview) {
+    const script = `
+        (function() {
+            const config = {
+                maxLength: 10000,
+                selectors: {
+                    article: 'article, main, [role="main"], #main-content, .main-content',
+                    headings: 'h1, h2, h3, h4, h5, h6',
+                    exclude: 'script, style, nav, header, footer, aside, .ad, .advertisement, .sidebar'
+                }
+            };
+
+            function getTextContent(element) {
+                if (!element) return '';
+                const clone = element.cloneNode(true);
+                clone.querySelectorAll(config.selectors.exclude).forEach(el => el.remove());
+                return clone.textContent.trim();
+            }
+
+            const title = document.title || '';
+            const url = window.location.href;
+            
+            let mainContent = '';
+            const articleSelectors = config.selectors.article.split(', ');
+            
+            for (const selector of articleSelectors) {
+                const element = document.querySelector(selector);
+                if (element) {
+                    mainContent = getTextContent(element);
+                    if (mainContent.length > 100) break;
+                }
+            }
+            
+            if (!mainContent) {
+                mainContent = getTextContent(document.body);
+            }
+            
+            if (mainContent.length > config.maxLength) {
+                mainContent = mainContent.substring(0, config.maxLength) + '...';
+            }
+            
+            return { title, url, content: mainContent };
+        })();
+    `;
+
+    return await webview.executeJavaScript(script);
+}
+
+// Format context for AI
+function formatContextForAI(context) {
+    if (!context) return '';
+
+    let formatted = `Page Title: ${context.title}\n`;
+    formatted += `URL: ${context.url}\n\n`;
+    formatted += `Content:\n${context.content}`;
+
+    return formatted;
+}
+
+// Call OpenAI API (shared with main.js)
+async function callOpenAI(message, context, apiKey) {
+    const messages = [
+        {
+            role: 'system',
+            content: `You are Vera, a helpful AI assistant integrated into the Vera Desktop application. 
+You have access to the content of the webpage the user is currently viewing. 
+When users ask questions, you should consider the page context and provide relevant, helpful answers.
+Be conversational, friendly, and concise in your responses.${context ? '\n\nCurrent page context:\n' + context : ''}`
+        },
+        {
+            role: 'user',
+            content: message
+        }
+    ];
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+            model: veraAISettings.model || 'gpt-4-turbo-preview',
+            messages: messages,
+            max_tokens: 2000,
+            temperature: 0.7,
+            stream: true
+        })
+    });
+
+    if (!response.ok) {
+        throw new Error(`OpenAI API error: ${response.status}`);
+    }
+
+    return response;
+}
+
+// Stream OpenAI response (shared with main.js)
+async function* streamOpenAIResponse(response) {
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let fullResponse = '';
+
+    try {
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || '';
+
+            for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                    const data = line.slice(6);
+                    if (data === '[DONE]') {
+                        return;
+                    }
+                    try {
+                        const parsed = JSON.parse(data);
+                        const content = parsed.choices?.[0]?.delta?.content;
+                        if (content) {
+                            fullResponse += content;
+                            yield fullResponse;
+                        }
+                    } catch (e) {
+                        // Ignore parsing errors
+                    }
+                }
+            }
+        }
+    } finally {
+        reader.releaseLock();
+    }
+} 

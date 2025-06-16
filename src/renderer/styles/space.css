@@ -1,6 +1,28 @@
 /* Space-specific styles */
 
 :root {
+    --primary-color: #4a90e2;
+    --primary-color-dark: #357abd;
+    --success-color: #28a745;
+    --danger-color: #dc3545;
+    --warning-color: #ffc107;
+    --info-color: #17a2b8;
+    --text-primary: #333;
+    --text-secondary: #666;
+    --border-color: #ddd;
+    --bg-primary: #fff;
+    --bg-secondary: #f8f9fa;
+    --bg-tertiary: #e9ecef;
+    --spacing-xs: 4px;
+    --spacing-sm: 8px;
+    --spacing-md: 16px;
+    --spacing-lg: 24px;
+    --spacing-xl: 32px;
+    --border-radius: 8px;
+    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
+    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.1);
+    --transition: all 0.2s ease;
     --sidebar-bg: var(--bg-secondary);
     --hover-bg: rgba(0, 0, 0, 0.05);
     --subspace-icon-bg: #f0f0f0;
@@ -9,10 +31,13 @@
 }
 
 .dark-theme {
-    --hover-bg: rgba(255, 255, 255, 0.1);
-    --subspace-icon-bg: var(--bg-secondary);
-    --subspace-text: var(--text-primary);
-    --subspace-text-secondary: var(--text-secondary);
+    --text-primary: #fff;
+    --text-secondary: #aaa;
+    --border-color: #444;
+    --bg-primary: #1a1d24;
+    --bg-secondary: #2a2d34;
+    --bg-tertiary: #3a3d44;
+    --hover-bg: rgba(255, 255, 255, 0.05);
 }
 
 .space-sidebar {
@@ -702,4 +727,292 @@
     width: 22px;
     height: 22px;
     display: block;
+}
+
+/* Vera Chatbot */
+.vera-chatbot {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 350px;
+    height: 500px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-lg);
+    display: flex;
+    flex-direction: column;
+    z-index: 1000;
+    transition: all 0.3s ease;
+}
+
+.vera-chatbot.minimized {
+    height: 60px;
+}
+
+.vera-chatbot.minimized .vera-body {
+    display: none;
+}
+
+.vera-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--bg-secondary);
+    border-radius: var(--border-radius) var(--border-radius) 0 0;
+}
+
+.vera-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.vera-avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+}
+
+.vera-minimize-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    transition: var(--transition);
+}
+
+.vera-minimize-btn:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+.vera-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.vera-message-container {
+    flex: 1;
+    padding: 16px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.vera-message {
+    max-width: 80%;
+    padding: 12px;
+    border-radius: var(--border-radius);
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.vera-message.assistant {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    align-self: flex-start;
+}
+
+.vera-message.user {
+    background: var(--primary-color);
+    color: white;
+    align-self: flex-end;
+}
+
+.vera-message.error {
+    background: var(--danger-color);
+    color: white;
+    align-self: center;
+    max-width: 90%;
+}
+
+.vera-input-container {
+    padding: 16px;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    gap: 8px;
+    background: var(--bg-primary);
+}
+
+.vera-input {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    font-size: 14px;
+    resize: none;
+    max-height: 100px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    transition: var(--transition);
+}
+
+.vera-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
+.vera-send-btn {
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: var(--border-radius);
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.vera-send-btn:hover {
+    background: var(--primary-color-dark);
+}
+
+.vera-send-btn svg {
+    fill: currentColor;
+}
+
+/* Dark theme adjustments */
+.dark-theme .vera-chatbot {
+    background: var(--bg-primary);
+    border-color: var(--border-color);
+}
+
+.dark-theme .vera-header {
+    background: var(--bg-secondary);
+}
+
+.dark-theme .vera-input {
+    background: var(--bg-primary);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+.dark-theme .vera-message.assistant {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+/* Settings Modal */
+.settings-content {
+    padding: 20px;
+}
+
+.settings-section {
+    margin-bottom: 32px;
+}
+
+.settings-section h3 {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 16px 0;
+}
+
+.setting-item {
+    margin-bottom: 16px;
+}
+
+.setting-item label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.setting-item input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    margin-right: 8px;
+}
+
+.setting-description {
+    margin: 4px 0 0 0;
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.4;
+}
+
+.setting-description a {
+    color: var(--primary-color);
+    text-decoration: none;
+}
+
+.setting-description a:hover {
+    text-decoration: underline;
+}
+
+.form-control {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 14px;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    transition: border-color 0.2s ease;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
+/* Notifications */
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 12px 20px;
+    border-radius: 8px;
+    color: white;
+    font-size: 14px;
+    font-weight: 500;
+    z-index: 10000;
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.notification.show {
+    transform: translateX(0);
+}
+
+.notification-success {
+    background: var(--success-color);
+}
+
+.notification-error {
+    background: var(--danger-color);
+}
+
+.notification-info {
+    background: var(--info-color);
+}
+
+.notification-warning {
+    background: var(--warning-color);
+}
+
+/* Dark theme adjustments */
+.dark-theme .form-control {
+    background-color: var(--bg-secondary);
+    border-color: var(--border-color);
+}
+
+.dark-theme .form-control:focus {
+    border-color: var(--primary-color);
 }
