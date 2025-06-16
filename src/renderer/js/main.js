@@ -42,7 +42,9 @@ async function initializeMainPageVeraAI() {
                     if (window.VeraWidget) {
                         if (!document.getElementById('vera-ai-widget')) {
                             console.log('[Vera Debug] VeraWidget class found');
-                            window.veraWidget = new window.VeraWidget();
+                            // Main window always uses generic chatbot type
+                            console.log('[Vera Debug] Initializing main window widget with generic type');
+                            window.veraWidget = new window.VeraWidget('generic');
                             window.veraWidget.createWidget();
                             console.log('[Vera Debug] VeraWidget created');
                             // Set up message handler

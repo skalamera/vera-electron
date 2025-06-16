@@ -989,9 +989,12 @@ function updateChatbotQuickActions() {
     if (currentSpace && currentSpace.chatbotType && window.veraWidget) {
         const actions = CHATBOT_QUICK_ACTIONS[currentSpace.chatbotType] || [];
         window.veraWidget.renderQuickActions(actions);
+        // Update the chatbot type display
+        window.veraWidget.updateChatbotType(currentSpace.chatbotType);
     } else if (window.veraWidget) {
-        // If no specific chatbot type or currentSpace, clear actions
+        // If no specific chatbot type or currentSpace, clear actions and set generic type
         window.veraWidget.renderQuickActions([]);
+        window.veraWidget.updateChatbotType('generic');
     }
 }
 
@@ -1025,7 +1028,10 @@ async function initializeVeraAI() {
                         }
                         if (!window.veraWidgetCreated) {
                             console.log('[Vera Debug] VeraWidget class found, creating widget');
-                            window.veraWidget = new window.VeraWidget();
+                            // Determine chatbot type - use currentSpace's type or default to generic
+                            const chatbotType = (currentSpace && currentSpace.chatbotType) ? currentSpace.chatbotType : 'generic';
+                            console.log('[Vera Debug] Initializing widget with chatbot type:', chatbotType);
+                            window.veraWidget = new window.VeraWidget(chatbotType);
                             window.veraWidget.createWidget();
                             window.veraWidgetCreated = true;
                             console.log('[Vera Debug] VeraWidget created and global flag set');
