@@ -129,6 +129,35 @@ class VeraWidget {
         }
     }
 
+    // Render quick action buttons
+    renderQuickActions(actions) {
+        const quickActionsContainer = document.getElementById('vera-quick-actions');
+        if (!quickActionsContainer) return;
+
+        // Clear existing actions
+        quickActionsContainer.innerHTML = '';
+
+        if (actions && actions.length > 0) {
+            actions.forEach(action => {
+                const button = document.createElement('button');
+                button.className = 'vera-quick-action-btn';
+                button.textContent = action.label;
+                button.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (this.onSendMessage) {
+                        this.onSendMessage(action.message);
+                        // Clear actions after one is clicked - REMOVED TO KEEP BUTTONS VISIBLE
+                        // this.renderQuickActions([]);
+                    }
+                });
+                quickActionsContainer.appendChild(button);
+            });
+            quickActionsContainer.style.display = 'flex'; // Show container if there are actions
+        } else {
+            quickActionsContainer.style.display = 'none'; // Hide container if no actions
+        }
+    }
+
     // Send a message
     async sendMessage() {
         const message = this.inputField.value.trim();

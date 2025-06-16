@@ -9,6 +9,16 @@ let veraAISettings = null;
 let veraAIInitialized = false;
 window.veraWidgetCreated = false;
 
+// Define quick actions for different chatbot types
+const CHATBOT_QUICK_ACTIONS = {
+    'generic': [],
+    'job_search': [
+        { label: 'Generate Cover Letter', message: 'Generate a cover letter for the job posting on this page using my personal data.' },
+        { label: 'Evaluate Job Fit', message: 'Evaluate my experience against the requirements of this job posting using my personal data and provide a summary.' },
+        { label: 'Suggest Interview Questions', message: 'Suggest common interview questions for this role.' }
+    ]
+};
+
 // Initialize the space window
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('Space window DOM loaded');
@@ -195,6 +205,12 @@ async function initializeSpace(space) {
     if (subspaces.length === 0) {
         showWelcomeScreen();
     }
+
+    // Render quick actions for the chatbot if it's initialized
+    if (window.veraWidget) {
+        console.log('[Vera Debug] Calling updateChatbotQuickActions from initializeSpace. currentSpace:', currentSpace, 'window.veraWidget:', !!window.veraWidget);
+        updateChatbotQuickActions();
+    }
 }
 
 // Update space info in UI
@@ -228,6 +244,12 @@ function updateSpaceInfo() {
     const welcomeSpaceName = document.getElementById('welcome-space-name');
     if (welcomeSpaceName) {
         welcomeSpaceName.textContent = currentSpace.name;
+    }
+
+    // Re-render quick actions if chatbot is initialized and type changed
+    if (window.veraWidget) {
+        console.log('[Vera Debug] Calling updateChatbotQuickActions from updateSpaceInfo. currentSpace:', currentSpace, 'window.veraWidget:', !!window.veraWidget);
+        updateChatbotQuickActions();
     }
 }
 
@@ -807,6 +829,12 @@ async function saveSpaceSettings() {
             currentSpace = updatedSpace;
             updateSpaceInfo();
             closeModal('space-settings-modal');
+
+            // Re-render quick actions if chatbot is initialized and type changed
+            if (window.veraWidget) {
+                console.log('[Vera Debug] Calling updateChatbotQuickActions from saveSpaceSettings. currentSpace:', currentSpace, 'window.veraWidget:', !!window.veraWidget);
+                updateChatbotQuickActions();
+            }
         }
     } catch (error) {
         console.error('Error updating space:', error);
@@ -952,6 +980,17 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+// Update chatbot quick actions based on current space's chatbot type
+function updateChatbotQuickActions() {
+    if (currentSpace && currentSpace.chatbotType && window.veraWidget) {
+        const actions = CHATBOT_QUICK_ACTIONS[currentSpace.chatbotType] || [];
+        window.veraWidget.renderQuickActions(actions);
+    } else if (window.veraWidget) {
+        // If no specific chatbot type or currentSpace, clear actions
+        window.veraWidget.renderQuickActions([]);
+    }
+}
+
 // Add Vera AI initialization function
 async function initializeVeraAI() {
     console.log('[Vera Debug] initializeVeraAI called');
@@ -991,6 +1030,10 @@ async function initializeVeraAI() {
                                 handleVeraAIMessage(message);
                             };
                             veraAIInitialized = true;
+
+                            // Now that widget is created and initialized, render quick actions
+                            updateChatbotQuickActions();
+
                         } else {
                             console.warn('[Vera Debug] Widget already created (global flag), skipping creation.');
                             veraAIInitialized = true;
@@ -1060,8 +1103,23 @@ async function handleVeraAIMessage(message) {
             fullContext += `\n\nPersonal Data for this Pod:\n${currentSpace.personalData}`;
         }
 
+        // Define AI instructions based on chatbot type
+        let aiInstructions = ``;
+        if (currentSpace && currentSpace.chatbotType) {
+            switch (currentSpace.chatbotType) {
+                case 'job_search':
+                    aiInstructions = `\n\nYou are a specialized AI assistant for job searching. Your primary goal is to help the user with job applications, resume analysis, and interview preparation related to the current webpage content. Use the provided personal data (like resume information) to tailor your responses. Focus on generating relevant content like cover letters, evaluating job fit, and suggesting interview questions.`;
+                    break;
+                // Add more chatbot types here in the future
+                case 'generic':
+                default:
+                    aiInstructions = ``; // No special instructions for generic
+                    break;
+            }
+        }
+
         // Call OpenAI API
-        const response = await callOpenAI(message, fullContext, veraAISettings.apiKey);
+        const response = await callOpenAI(message, fullContext, veraAISettings.apiKey, aiInstructions);
 
         // Stream response
         for await (const chunk of streamOpenAIResponse(response)) {
@@ -1083,9 +1141,7 @@ async function extractWebviewContext(webview) {
             const config = {
                 maxLength: 10000,
                 selectors: {
-                    article: 'article, main, [role="main"], #main-content, .main-content',
-                    headings: 'h1, h2, h3, h4, h5, h6',
-                    exclude: 'script, style, nav, header, footer, aside, .ad, .advertisement, .sidebar'
+                    exclude: 'script, style, nav, header, footer, aside, .ad, .advertisement, .sidebar, [aria-hidden="true"]',
                 }
             };
 
@@ -1093,26 +1149,21 @@ async function extractWebviewContext(webview) {
                 if (!element) return '';
                 const clone = element.cloneNode(true);
                 clone.querySelectorAll(config.selectors.exclude).forEach(el => el.remove());
+                // Handle common interactive elements that might contain text but are not simple text nodes
+                clone.querySelectorAll('input, textarea, select').forEach(input => {
+                    if (input.value) {
+                        input.textContent = input.value; // Use value for input fields
+                    }
+                });
                 return clone.textContent.trim();
             }
 
             const title = document.title || '';
             const url = window.location.href;
             
-            let mainContent = '';
-            const articleSelectors = config.selectors.article.split(', ');
-            
-            for (const selector of articleSelectors) {
-                const element = document.querySelector(selector);
-                if (element) {
-                    mainContent = getTextContent(element);
-                    if (mainContent.length > 100) break;
-                }
-            }
-            
-            if (!mainContent) {
-                mainContent = getTextContent(document.body);
-            }
+            // Attempt to get the most relevant content, prioritizing visible elements.
+            // For modals and overlays, innerText of the body might be the most reliable.
+            let mainContent = getTextContent(document.body);
             
             if (mainContent.length > config.maxLength) {
                 mainContent = mainContent.substring(0, config.maxLength) + '...';
@@ -1137,14 +1188,14 @@ function formatContextForAI(context) {
 }
 
 // Call OpenAI API (shared with main.js)
-async function callOpenAI(message, context, apiKey) {
+async function callOpenAI(message, context, apiKey, aiInstructions = '') {
     const messages = [
         {
             role: 'system',
             content: `You are Vera, a helpful AI assistant integrated into the Vera Desktop application. 
 You have access to the content of the webpage the user is currently viewing. 
 When users ask questions, you should consider the page context and provide relevant, helpful answers.
-Be conversational, friendly, and concise in your responses.${context ? '\n\nCurrent page context:\n' + context : ''}`
+Be conversational, friendly, and concise in your responses.${context ? '\n\nCurrent page context:\n' + context : ''}${aiInstructions}`
         },
         {
             role: 'user',

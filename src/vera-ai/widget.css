@@ -257,18 +257,46 @@
 
 /* Input Container */
 .vera-input-container {
-    padding: 16px;
+    padding: 16px 20px;
     border-top: 1px solid #e5e5e5;
     display: flex;
-    gap: 8px;
-    align-items: center;
+    flex-direction: column;
+    gap: 10px;
+    background: white;
+    border-radius: 0 0 16px 16px;
 }
 
+/* Quick Actions Container */
+.vera-quick-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 5px;
+}
+
+.vera-quick-action-btn {
+    background: #e3e8ff;
+    color: #667eea;
+    border: 1px solid #667eea;
+    padding: 8px 12px;
+    border-radius: 20px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.vera-quick-action-btn:hover {
+    background: #667eea;
+    color: white;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+/* Input Field */
 .vera-input {
     flex: 1;
     padding: 12px 16px;
-    border: 1px solid #e5e5e5;
-    border-radius: 24px;
+    border: 1px solid #dcdcdc;
+    border-radius: 12px;
     font-size: 14px;
     outline: none;
     transition: border-color 0.2s ease;
@@ -278,31 +306,34 @@
     border-color: #667eea;
 }
 
+/* Send Button */
 .vera-send-btn {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
     background: #667eea;
-    border: none;
     color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 12px;
     cursor: pointer;
+    width: 44px;
+    height: 44px;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s ease;
+    flex-shrink: 0;
+    transition: background 0.2s ease, box-shadow 0.2s ease;
 }
 
 .vera-send-btn:hover:not(:disabled) {
-    background: #5a67d8;
-    transform: scale(1.05);
+    background: #764ba2;
+    box-shadow: 0 4px 10px rgba(102, 126, 234, 0.3);
 }
 
 .vera-send-btn:disabled {
-    opacity: 0.6;
+    background: #a9b7e7;
     cursor: not-allowed;
 }
 
-/* Spinner Animation */
+/* Spinner for loading state */
 .vera-spinner {
     animation: spin 1s linear infinite;
 }
@@ -317,55 +348,68 @@
     }
 }
 
-/* Dark Theme Support */
+/* Dark Theme Adjustments */
 body.dark-theme .vera-chat-container {
-    background: #2d3748;
-    color: #e2e8f0;
+    background: #2b2b2b;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
 }
 
 body.dark-theme .vera-header {
-    border-bottom-color: #4a5568;
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
 }
 
 body.dark-theme .vera-messages {
-    background: #2d3748;
+    background: #2b2b2b;
 }
 
 body.dark-theme .vera-welcome-message {
-    background: #1a202c;
-    color: #a0aec0;
+    background: #3a3a3a;
+    color: #ccc;
 }
 
 body.dark-theme .vera-message-content {
-    background: #1a202c;
-    color: #e2e8f0;
+    background: #3a3a3a;
+    color: #e0e0e0;
 }
 
 body.dark-theme .vera-message.user .vera-message-content {
-    background: #667eea;
+    background: #4f46e5;
     color: white;
 }
 
 body.dark-theme .vera-input-container {
-    border-top-color: #4a5568;
+    background: #2b2b2b;
+    border-top-color: #3a3a3a;
 }
 
 body.dark-theme .vera-input {
-    background: #1a202c;
-    border-color: #4a5568;
-    color: #e2e8f0;
+    background: #3a3a3a;
+    border-color: #4a4a4a;
+    color: #e0e0e0;
 }
 
 body.dark-theme .vera-input:focus {
-    border-color: #667eea;
+    border-color: #4f46e5;
 }
 
-/* Responsive Design */
+/* Dark theme for quick action buttons */
+body.dark-theme .vera-quick-action-btn {
+    background: #4a4a4a;
+    border-color: #5a5a5a;
+    color: #e0e0e0;
+}
+
+body.dark-theme .vera-quick-action-btn:hover {
+    background: #5a5a5a;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Responsive */
 @media (max-width: 480px) {
     .vera-chat-container {
-        width: calc(100vw - 40px);
-        height: calc(100vh - 100px);
-        right: 20px;
-        bottom: 80px;
+        width: 90%;
+        height: 80vh;
+        bottom: 5%;
+        right: 5%;
     }
 }
