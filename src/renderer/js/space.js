@@ -513,6 +513,8 @@ function showOrCreateWebview(subspace) {
         // Show existing webview
         webview.style.display = 'flex';
         webviewContainer.style.display = 'block';
+        webview.focus();
+        console.log('[space.js] Focused existing webview for subspace:', subspace.name);
     } else {
         // Create new webview
         webview = document.createElement('webview');
@@ -553,6 +555,8 @@ function showOrCreateWebview(subspace) {
         webviewContainer.appendChild(webview);
         webviewsMap.set(subspace.id, webview);
         webviewContainer.style.display = 'block';
+        webview.focus();
+        console.log('[space.js] Focused new webview for subspace:', subspace.name);
     }
     // Show nav bar
     const navBar = document.getElementById('webview-nav-bar');
