@@ -119,6 +119,12 @@ class VeraWidget {
                         <p>I specialize in helping people complete job applications quickly, completely, and accurately! 😊⚡</p>
                     `;
                     break;
+                case 'crypto_czar':
+                    welcomeContent = `
+                        <p>Hi! I'm Vera, your Crypto Czar 🤖💰.</p>
+                        <p>I specialize in cryptocurrency analysis, DeFi protocols, and trading strategies. Let's navigate the crypto markets together! 🚀📈</p>
+                    `;
+                    break;
                 case 'generic':
                 default:
                     welcomeContent = `
@@ -229,7 +235,8 @@ class VeraWidget {
         if (typeElement) {
             const typeNames = {
                 'generic': 'AI Assistant',
-                'job_search': 'Job Application Assistant'
+                'job_search': 'Job Application Assistant',
+                'crypto_czar': 'Crypto Czar'
             };
             typeElement.textContent = typeNames[type] || 'AI Assistant';
         }
@@ -302,7 +309,11 @@ class VeraWidget {
                 <div class="vera-message-bubble user-bubble">${this.escapeHtml(content)}</div>
             </div>` :
             `<div class="vera-message assistant ${isStreaming ? 'streaming' : ''}">
-                <div class="vera-message-bubble assistant-bubble">${this.escapeHtml(content)}</div>
+                <div class="vera-message-bubble assistant-bubble">${this.escapeHtml(content)}
+                    <button class="vera-copy-btn" title="Copy" onclick="window.veraWidget.copyMessageToClipboard(this)">
+                        <span class="vera-copy-btn-text">Copy</span>
+                    </button>
+                </div>
             </div>`;
 
         messagesContainer.insertAdjacentHTML('beforeend', messageHTML);
@@ -375,6 +386,18 @@ class VeraWidget {
     // Callback for refreshing context
     onRefreshContext() {
         console.log('Refresh context requested');
+    }
+
+    // Add this method to handle copy logic
+    copyMessageToClipboard(button) {
+        const bubble = button.closest('.vera-message-bubble');
+        const text = bubble.childNodes[0].textContent;
+        navigator.clipboard.writeText(text).then(() => {
+            const btnText = button.querySelector('.vera-copy-btn-text');
+            const original = btnText.textContent;
+            btnText.textContent = 'Copied!';
+            setTimeout(() => { btnText.textContent = original; }, 1200);
+        });
     }
 }
 

@@ -189,7 +189,8 @@ function createSpace(config) {
         },
         createdAt: Date.now(),
         personalData: config.personalData || '', // New field for personal data
-        chatbotType: config.chatbotType || 'generic' // New field for specialized chatbot type
+        chatbotType: config.chatbotType || 'generic', // New field for specialized chatbot type
+        portfolioData: config.portfolioData || [] // New field for crypto portfolio data
     };
 
     spaces.set(spaceId, spaceConfig);
@@ -606,10 +607,11 @@ function setupIpcHandlers() {
             }
 
             const completion = await openai.chat.completions.create({
-                model: "gpt-3.5-turbo",
+                model: "gpt-4o-mini",
                 messages,
-                max_tokens: 300,
-                temperature: 0.7
+                max_tokens: 2000,
+                temperature: 0.7,
+                stream: true
             });
 
             return completion.choices[0].message.content;
@@ -715,7 +717,7 @@ function setupIpcHandlers() {
             }
 
             const completion = await openai.chat.completions.create({
-                model: settings.veraAI.model || 'gpt-4-turbo-preview',
+                model: "gpt-4o-mini",
                 messages,
                 max_tokens: 2000,
                 temperature: 0.7,

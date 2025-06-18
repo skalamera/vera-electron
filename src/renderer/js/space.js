@@ -9,13 +9,47 @@ let veraAISettings = null;
 let veraAIInitialized = false;
 window.veraWidgetCreated = false;
 
+// List of popular cryptocurrencies for the dropdown
+const TOP_CRYPTOCURRENCIES = [
+    { symbol: 'BTC', name: 'Bitcoin' },
+    { symbol: 'ETH', name: 'Ethereum' },
+    { symbol: 'BNB', name: 'Binance Coin' },
+    { symbol: 'ADA', name: 'Cardano' },
+    { symbol: 'SOL', name: 'Solana' },
+    { symbol: 'XRP', name: 'Ripple' },
+    { symbol: 'DOT', name: 'Polkadot' },
+    { symbol: 'DOGE', name: 'Dogecoin' },
+    { symbol: 'AVAX', name: 'Avalanche' },
+    { symbol: 'LINK', name: 'Chainlink' },
+    { symbol: 'MATIC', name: 'Polygon' },
+    { symbol: 'LTC', name: 'Litecoin' },
+    { symbol: 'UNI', name: 'Uniswap' },
+    { symbol: 'ATOM', name: 'Cosmos' },
+    { symbol: 'ALGO', name: 'Algorand' },
+    { symbol: 'VET', name: 'VeChain' },
+    { symbol: 'ICP', name: 'Internet Computer' },
+    { symbol: 'FIL', name: 'Filecoin' },
+    { symbol: 'TRX', name: 'TRON' },
+    { symbol: 'XLM', name: 'Stellar' }
+];
+
 // Define quick actions for different chatbot types
 const CHATBOT_QUICK_ACTIONS = {
-    'generic': [],
+    'generic': [
+        { label: 'Summarize this for me', message: 'Please provide a clear and concise summary of the main points on this page.' },
+        { label: 'Explain this simply', message: 'Can you explain the content on this page in simple terms that are easy to understand?' },
+        { label: 'Key takeaways', message: 'What are the key takeaways or most important points from this page?' },
+        { label: 'Ask questions about this', message: 'What questions should I be asking about the content on this page?' }
+    ],
     'job_search': [
         { label: 'Generate Cover Letter', message: 'Generate a cover letter for the job posting on this page using my personal data.' },
         { label: 'Evaluate Job Fit', message: 'Evaluate my experience against the requirements of this job posting using my personal data and provide a summary.' },
         { label: 'Suggest Interview Questions', message: 'Suggest common interview questions for this role.' }
+    ],
+    'crypto_czar': [
+        { label: 'Analyze Crypto Market', message: 'Analyze the current cryptocurrency market trends and provide insights based on this page.' },
+        { label: 'Trading Strategy', message: 'Suggest a trading strategy based on the current market data and trends shown on this page.' },
+        { label: 'Portfolio Review', message: 'Review and analyze cryptocurrency portfolio allocation based on the information provided.' }
     ]
 };
 
@@ -776,11 +810,25 @@ function showSpaceSettings() {
                     <select id="space-chatbot-type-edit" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 14px;">
                         <option value="generic" ${currentSpace.chatbotType === 'generic' ? 'selected' : ''}>Generic</option>
                         <option value="job_search" ${currentSpace.chatbotType === 'job_search' ? 'selected' : ''}>Job Search</option>
+                        <option value="crypto_czar" ${currentSpace.chatbotType === 'crypto_czar' ? 'selected' : ''}>Crypto Czar</option>
                     </select>
                 </div>
                 <div class="form-group">
                     <label for="space-personal-data-edit">Personal Data (for AI context)</label>
                     <textarea id="space-personal-data-edit" rows="6" placeholder="Enter any personal data or context Vera should remember for this Pod (e.g., your resume, project details, personal preferences). This data is local to this Pod and will be used to enhance AI responses.">${currentSpace.personalData || ''}</textarea>
+                </div>
+                <div class="form-group" id="portfolio-section-edit" style="display: ${currentSpace.chatbotType === 'crypto_czar' ? 'block' : 'none'};">
+                    <label>Portfolio Information (for Crypto Czar)</label>
+                    <p style="font-size: 12px; color: var(--text-secondary); margin: 4px 0 12px 0;">Add your cryptocurrency holdings for personalized analysis and recommendations.</p>
+                    <div id="portfolio-holdings-edit">
+                        <!-- Portfolio holdings will be dynamically added here -->
+                    </div>
+                    <button type="button" class="secondary-button" onclick="addPortfolioHolding('edit')" style="margin-top: 8px;">
+                        <svg width="16" height="16" viewBox="0 0 16 16">
+                            <path d="M8 2 L8 14 M2 8 L14 8" stroke="currentColor" stroke-width="2" />
+                        </svg>
+                        Add Holding
+                    </button>
                 </div>
                 <div class="form-group">
                     <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
@@ -804,6 +852,28 @@ function showSpaceSettings() {
     `;
 
     document.body.appendChild(modal);
+
+    // Initialize portfolio holdings if they exist
+    if (currentSpace.portfolioData && currentSpace.portfolioData.length > 0) {
+        setTimeout(() => {
+            currentSpace.portfolioData.forEach(holding => {
+                addPortfolioHolding('edit', holding.coin, holding.amount);
+            });
+        }, 100);
+    }
+
+    // Set up chatbot type change listener to show/hide portfolio section
+    setTimeout(() => {
+        const chatbotTypeSelect = document.getElementById('space-chatbot-type-edit');
+        if (chatbotTypeSelect) {
+            chatbotTypeSelect.addEventListener('change', function () {
+                const portfolioSection = document.getElementById('portfolio-section-edit');
+                if (portfolioSection) {
+                    portfolioSection.style.display = this.value === 'crypto_czar' ? 'block' : 'none';
+                }
+            });
+        }
+    }, 100);
 }
 
 // Save pod settings
@@ -817,11 +887,14 @@ async function saveSpaceSettings() {
     if (!nameInput || !colorInput || !personalDataInput || !chatbotTypeSelect || !currentSpace) return;
 
     try {
+        const portfolioData = getPortfolioData();
+
         const updates = {
             name: nameInput.value.trim(),
             color: colorInput.value,
             personalData: personalDataInput.value.trim(),
             chatbotType: chatbotTypeSelect.value,
+            portfolioData: portfolioData, // Add portfolio data
             settings: {
                 ...currentSpace.settings,
                 adBlockEnabled: adBlockInput.checked
@@ -936,6 +1009,8 @@ window.showSpaceSettings = showSpaceSettings;
 window.saveSpaceSettings = saveSpaceSettings;
 window.deleteSpace = deleteSpace;
 window.clearIconPreview = clearIconPreview;
+window.addPortfolioHolding = addPortfolioHolding;
+window.removePortfolioHolding = removePortfolioHolding;
 
 // On initial load, apply dark theme if needed
 async function applyInitialTheme() {
@@ -1113,12 +1188,23 @@ async function handleVeraAIMessage(message) {
             fullContext += `\n\nPersonal Data for this Pod:\n${currentSpace.personalData}`;
         }
 
+        // Add portfolio information for Crypto Czar chatbots
+        if (currentSpace && currentSpace.chatbotType === 'crypto_czar' && currentSpace.portfolioData && currentSpace.portfolioData.length > 0) {
+            fullContext += `\n\nCryptocurrency Portfolio:\n`;
+            currentSpace.portfolioData.forEach(holding => {
+                fullContext += `- ${holding.coin}: ${holding.amount}\n`;
+            });
+        }
+
         // Define AI instructions based on chatbot type
         let aiInstructions = ``;
         if (currentSpace && currentSpace.chatbotType) {
             switch (currentSpace.chatbotType) {
                 case 'job_search':
                     aiInstructions = `\n\nYou are a specialized AI assistant for job searching. Your primary goal is to help the user with job applications, resume analysis, and interview preparation related to the current webpage content. Use the provided personal data (like resume information) to tailor your responses. Focus on generating relevant content like cover letters, evaluating job fit, and suggesting interview questions.`;
+                    break;
+                case 'crypto_czar':
+                    aiInstructions = `\n\nYou are a specialized AI assistant for cryptocurrency analysis. Your primary goal is to help the user understand the current market trends, analyze DeFi protocols, and suggest trading strategies based on the information provided. Use the provided personal data (like investment goals, risk tolerance) to tailor your responses. Focus on generating relevant content like market analysis, protocol explanation, and trading strategy suggestions.`;
                     break;
                 // Add more chatbot types here in the future
                 case 'generic':
@@ -1533,4 +1619,63 @@ async function* streamOpenAIResponse(response) {
     } finally {
         reader.releaseLock();
     }
+}
+
+// Add a portfolio holding row
+function addPortfolioHolding(mode = 'edit', selectedCoin = '', amount = '') {
+    const containerId = mode === 'edit' ? 'portfolio-holdings-edit' : 'portfolio-holdings';
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    const holdingId = Date.now() + Math.random();
+    const cryptoOptions = TOP_CRYPTOCURRENCIES.map(crypto =>
+        `<option value="${crypto.symbol}" ${selectedCoin === crypto.symbol ? 'selected' : ''}>${crypto.symbol} - ${crypto.name}</option>`
+    ).join('');
+
+    const holdingHTML = `
+        <div class="portfolio-holding" data-id="${holdingId}" style="display: flex; gap: 8px; margin-bottom: 8px; align-items: center;">
+            <select class="crypto-select" style="flex: 1; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 14px;">
+                <option value="">Select Cryptocurrency</option>
+                ${cryptoOptions}
+            </select>
+            <input type="number" class="amount-input" placeholder="Amount" value="${amount}" step="0.00000001" min="0" 
+                   style="flex: 1; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 14px;">
+            <button type="button" class="icon-button" onclick="removePortfolioHolding('${holdingId}')" 
+                    style="padding: 8px; background: var(--danger-color); color: white; border: none; border-radius: 4px; cursor: pointer;">
+                <svg width="16" height="16" viewBox="0 0 16 16">
+                    <path d="M2 2 L14 14 M14 2 L2 14" stroke="currentColor" stroke-width="2" />
+                </svg>
+            </button>
+        </div>
+    `;
+
+    container.insertAdjacentHTML('beforeend', holdingHTML);
+}
+
+// Remove a portfolio holding row
+function removePortfolioHolding(holdingId) {
+    const holding = document.querySelector(`[data-id="${holdingId}"]`);
+    if (holding) {
+        holding.remove();
+    }
+}
+
+// Get portfolio data from form
+function getPortfolioData() {
+    const holdings = [];
+    const holdingElements = document.querySelectorAll('.portfolio-holding');
+
+    holdingElements.forEach(element => {
+        const coinSelect = element.querySelector('.crypto-select');
+        const amountInput = element.querySelector('.amount-input');
+
+        if (coinSelect && amountInput && coinSelect.value && amountInput.value) {
+            holdings.push({
+                coin: coinSelect.value,
+                amount: parseFloat(amountInput.value) || 0
+            });
+        }
+    });
+
+    return holdings;
 } 

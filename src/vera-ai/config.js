@@ -3,7 +3,7 @@ const config = {
     // OpenAI Configuration
     openai: {
         apiKey: process.env.OPENAI_API_KEY || '', // Will be set from settings
-        model: process.env.OPENAI_MODEL || 'gpt-4-turbo-preview',
+        model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
         maxTokens: 2000,
         temperature: 0.7,
         systemPrompt: `You are Vera, a helpful AI assistant integrated into the Vera Desktop application. 

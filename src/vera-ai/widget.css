@@ -466,3 +466,26 @@ body.dark-theme .vera-quick-action-btn:hover {
         transform: translateY(-50%) translateX(-320px);
     }
 }
+
+.vera-copy-btn {
+    background: none;
+    border: none;
+    color: #888;
+    cursor: pointer;
+    font-size: 12px;
+    margin-left: 8px;
+    padding: 2px 8px;
+    border-radius: 6px;
+    transition: background 0.2s, color 0.2s;
+    position: relative;
+    top: -2px;
+}
+
+.vera-copy-btn:hover {
+    background: #e0e0e0;
+    color: #333;
+}
+
+.vera-copy-btn-text {
+    pointer-events: none;
+}
