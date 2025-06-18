@@ -555,7 +555,8 @@ function setupIpcHandlers() {
             { id: 'font_awesome', name: 'Font Awesome', url: 'https://fontawesome.com/', icon: '🌟', category: 'Design' },
             { id: 'google_fonts', name: 'Google Fonts', url: 'https://fonts.google.com/', icon: '🔤', category: 'Design' },
             { id: 'color_hunt', name: 'Color Hunt', url: 'https://colorhunt.co/', icon: '🌈', category: 'Design' },
-            { id: 'coolors', name: 'Coolors', url: 'https://coolors.co/', icon: '🎨', category: 'Design' }
+            { id: 'coolors', name: 'Coolors', url: 'https://coolors.co/', icon: '🎨', category: 'Design' },
+            { id: 'microsoft_copilot', name: 'Microsoft Copilot', url: 'https://m365.cloud.microsoft', icon: '<img src="styles/images/m365copilot.svg" alt="Microsoft Copilot" class="app-icon">', category: 'AI' }
         ];
     });
 

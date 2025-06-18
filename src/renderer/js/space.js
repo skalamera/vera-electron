@@ -572,7 +572,7 @@ function showOrCreateWebview(subspace) {
             // Inject Vera AI if enabled
             if (veraAIEnabled) {
                 console.log('[Vera Debug] Attempting to inject Vera AI into webview:', subspace.name);
-                injectVeraAIIntoWebview(webview);
+                // injectVeraAIIntoWebview(webview); // Removed to fix ReferenceError
             }
         });
 
@@ -638,9 +638,13 @@ async function addCustomSubspace() {
     }
 
     try {
+        let url = urlInput.value.trim();
+        if (url && !/^https?:\/\//i.test(url)) {
+            url = 'https://' + url;
+        }
         const subspaceConfig = {
             name: nameInput.value.trim(),
-            url: urlInput.value.trim(),
+            url: url,
             icon: iconInput?.value.trim() || '🌐'
         };
 
@@ -1201,7 +1205,7 @@ async function handleVeraAIMessage(message) {
         if (currentSpace && currentSpace.chatbotType) {
             switch (currentSpace.chatbotType) {
                 case 'job_search':
-                    aiInstructions = `\n\nYou are a specialized AI assistant for job searching. Your primary goal is to help the user with job applications, resume analysis, and interview preparation related to the current webpage content. Use the provided personal data (like resume information) to tailor your responses. Focus on generating relevant content like cover letters, evaluating job fit, and suggesting interview questions.`;
+                    aiInstructions = `\n\nYou are a specialized AI assistant for job searching. When asked to generate a cover letter, respond with only the cover letter content, starting with the address block exactly as follows (unless the user specifies otherwise):\nStephen Skalamera\nNew Rochelle, NY\nskalamera@gmail.com\n443.624.1226\n[Date]\n\nThen, include:\nHiring Manager\n[Company Name]\n\nThen, begin the letter. Do NOT include [Company Address] or [City, State, Zip] placeholders. Do not include any explanations, markdown, or extra commentary before or after the letter. Always use the provided address block unless the user specifies otherwise.`;
                     break;
                 case 'crypto_czar':
                     aiInstructions = `\n\nYou are a specialized AI assistant for cryptocurrency analysis. Your primary goal is to help the user understand the current market trends, analyze DeFi protocols, and suggest trading strategies based on the information provided. Use the provided personal data (like investment goals, risk tolerance) to tailor your responses. Focus on generating relevant content like market analysis, protocol explanation, and trading strategy suggestions.`;

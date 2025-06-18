@@ -46,7 +46,7 @@ class VeraWidget {
                 <!-- Messages Container -->
                 <div class="vera-messages" id="vera-messages">
                     <div class="vera-welcome-message">
-                        <div class="vera-assistant-message">
+                        <div class="vera-message assistant">
                             <div class="vera-message-bubble assistant-bubble" id="vera-welcome-message-content">
                                 <!-- Welcome message will be set dynamically -->
                             </div>
@@ -114,26 +114,17 @@ class VeraWidget {
             let welcomeContent = '';
             switch (type) {
                 case 'job_search':
-                    welcomeContent = `
-                        <p>Hi! I'm Vera, your AI assistant 🤖.</p>
-                        <p>I specialize in helping people complete job applications quickly, completely, and accurately! 😊⚡</p>
-                    `;
+                    welcomeContent = `Hi! I'm Vera, your AI assistant 🤖.\nI specialize in helping people complete job applications quickly, completely, and accurately! 😊⚡`;
                     break;
                 case 'crypto_czar':
-                    welcomeContent = `
-                        <p>Hi! I'm Vera, your Crypto Czar 🤖💰.</p>
-                        <p>I specialize in cryptocurrency analysis, DeFi protocols, and trading strategies. Let's navigate the crypto markets together! 🚀📈</p>
-                    `;
+                    welcomeContent = `Hi! I'm Vera, your Crypto Czar 🤖💰.\nI specialize in cryptocurrency analysis, DeFi protocols, and trading strategies. Let's navigate the crypto markets together! 🚀📈`;
                     break;
                 case 'generic':
                 default:
-                    welcomeContent = `
-                        <p>Hi! I'm Vera, your AI assistant 🤖.</p>
-                        <p>I'm here to help you with any questions or tasks you have. How can I assist you today? 😊</p>
-                    `;
+                    welcomeContent = `Hi! I'm Vera, your AI assistant 🤖.\nI'm here to help you with any questions or tasks you have. How can I assist you today? 😊`;
                     break;
             }
-            welcomeElement.innerHTML = welcomeContent;
+            welcomeElement.innerHTML = `<span class="vera-message-content">${this.escapeHtml(welcomeContent)}</span><button class="vera-copy-btn" title="Copy" onclick="window.veraWidget.copyWelcomeMessage()"><svg class="vera-copy-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>`;
         }
     }
 
@@ -292,30 +283,33 @@ class VeraWidget {
 
     // Add a message to the chat
     addMessage(role, content, isStreaming = false) {
+        console.log('[Vera Debug] addMessage called:', { role, content: content.substring(0, 50), isStreaming });
         const messagesContainer = document.getElementById('vera-messages');
 
         if (isStreaming) {
             // Update existing streaming message
             const existingStreaming = messagesContainer.querySelector('.vera-message.assistant.streaming');
             if (existingStreaming) {
-                existingStreaming.querySelector('.vera-message-bubble').textContent = content;
+                const messageBubble = existingStreaming.querySelector('.vera-message-bubble');
+                messageBubble.innerHTML = `<span class="vera-message-content">${this.escapeHtml(content)}</span>`;
                 this.scrollToBottom();
                 return;
             }
         }
 
+        const escapedContent = this.escapeHtml(content);
         const messageHTML = role === 'user' ?
             `<div class="vera-message user">
-                <div class="vera-message-bubble user-bubble">${this.escapeHtml(content)}</div>
+                <div class="vera-message-bubble user-bubble"><span class="vera-message-content">${escapedContent}</span></div>
             </div>` :
             `<div class="vera-message assistant ${isStreaming ? 'streaming' : ''}">
-                <div class="vera-message-bubble assistant-bubble">${this.escapeHtml(content)}
-                    <button class="vera-copy-btn" title="Copy" onclick="window.veraWidget.copyMessageToClipboard(this)">
-                        <span class="vera-copy-btn-text">Copy</span>
-                    </button>
+                <div class="vera-message-bubble assistant-bubble">
+                    <span class="vera-message-content">${escapedContent}</span>
+                    ${!isStreaming ? `<button class="vera-copy-btn" title="Copy message" onclick="window.veraWidget.copyMessageToClipboard(this)"><svg class="vera-copy-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>` : ''}
                 </div>
             </div>`;
 
+        console.log('[Vera Debug] Message HTML being added:', messageHTML.substring(0, 200));
         messagesContainer.insertAdjacentHTML('beforeend', messageHTML);
         this.scrollToBottom();
     }
@@ -333,9 +327,20 @@ class VeraWidget {
 
     // Finish streaming response
     finishStreamingResponse() {
+        console.log('[Vera Debug] finishStreamingResponse called');
         const streamingMessage = document.querySelector('.vera-message.assistant.streaming');
         if (streamingMessage) {
+            console.log('[Vera Debug] Found streaming message, removing streaming class and adding copy button');
             streamingMessage.classList.remove('streaming');
+            // Add copy button after streaming is finished
+            const messageBubble = streamingMessage.querySelector('.vera-message-bubble');
+            const currentContent = messageBubble.querySelector('.vera-message-content');
+            if (currentContent && !messageBubble.querySelector('.vera-copy-btn')) {
+                console.log('[Vera Debug] Adding copy button to finished streaming message');
+                messageBubble.insertAdjacentHTML('beforeend', `<button class="vera-copy-btn" title="Copy message" onclick="window.veraWidget.copyMessageToClipboard(this)"><svg class="vera-copy-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>`);
+            }
+        } else {
+            console.log('[Vera Debug] No streaming message found');
         }
         this.setLoading(false);
     }
@@ -391,12 +396,84 @@ class VeraWidget {
     // Add this method to handle copy logic
     copyMessageToClipboard(button) {
         const bubble = button.closest('.vera-message-bubble');
-        const text = bubble.childNodes[0].textContent;
+        const textElement = bubble.querySelector('.vera-message-content');
+        const text = textElement ? textElement.textContent : '';
+
         navigator.clipboard.writeText(text).then(() => {
             const btnText = button.querySelector('.vera-copy-btn-text');
             const original = btnText.textContent;
             btnText.textContent = 'Copied!';
-            setTimeout(() => { btnText.textContent = original; }, 1200);
+            button.classList.add('copied');
+            setTimeout(() => {
+                btnText.textContent = original;
+                button.classList.remove('copied');
+            }, 1500);
+        }).catch(err => {
+            console.error('Failed to copy: ', err);
+            // Fallback for older browsers
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            textArea.style.position = 'fixed';
+            textArea.style.opacity = '0';
+            document.body.appendChild(textArea);
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                const btnText = button.querySelector('.vera-copy-btn-text');
+                const original = btnText.textContent;
+                btnText.textContent = 'Copied!';
+                button.classList.add('copied');
+                setTimeout(() => {
+                    btnText.textContent = original;
+                    button.classList.remove('copied');
+                }, 1500);
+            } catch (err) {
+                console.error('Fallback copy failed: ', err);
+            }
+            document.body.removeChild(textArea);
+        });
+    }
+
+    // Add copy method for welcome message
+    copyWelcomeMessage() {
+        const welcomeElement = document.getElementById('vera-welcome-message-content');
+        const textElement = welcomeElement.querySelector('.vera-message-content');
+        const text = textElement ? textElement.textContent : '';
+
+        navigator.clipboard.writeText(text).then(() => {
+            const button = welcomeElement.querySelector('.vera-copy-btn');
+            const btnText = button.querySelector('.vera-copy-btn-text');
+            const original = btnText.textContent;
+            btnText.textContent = 'Copied!';
+            button.classList.add('copied');
+            setTimeout(() => {
+                btnText.textContent = original;
+                button.classList.remove('copied');
+            }, 1500);
+        }).catch(err => {
+            console.error('Failed to copy: ', err);
+            // Fallback for older browsers
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            textArea.style.position = 'fixed';
+            textArea.style.opacity = '0';
+            document.body.appendChild(textArea);
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                const button = welcomeElement.querySelector('.vera-copy-btn');
+                const btnText = button.querySelector('.vera-copy-btn-text');
+                const original = btnText.textContent;
+                btnText.textContent = 'Copied!';
+                button.classList.add('copied');
+                setTimeout(() => {
+                    btnText.textContent = original;
+                    button.classList.remove('copied');
+                }, 1500);
+            } catch (err) {
+                console.error('Fallback copy failed: ', err);
+            }
+            document.body.removeChild(textArea);
         });
     }
 }

@@ -810,7 +810,8 @@
 }
 
 .vera-message {
-    max-width: 80%;
+    max-width: 98%;
+    width: 100%;
     padding: 12px;
     border-radius: var(--border-radius);
     font-size: 14px;

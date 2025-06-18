@@ -216,6 +216,10 @@
     font-size: 14px;
     line-height: 1.4;
     word-wrap: break-word;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
 .user-bubble {
@@ -468,24 +472,118 @@ body.dark-theme .vera-quick-action-btn:hover {
 }
 
 .vera-copy-btn {
-    background: none;
-    border: none;
-    color: #888;
+    align-self: flex-end;
+    background: rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    color: #666;
     cursor: pointer;
-    font-size: 12px;
-    margin-left: 8px;
-    padding: 2px 8px;
-    border-radius: 6px;
-    transition: background 0.2s, color 0.2s;
-    position: relative;
-    top: -2px;
+    font-size: 11px;
+    padding: 4px 12px;
+    border-radius: 12px;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 4px;
+}
+
+.vera-message-bubble:hover .vera-copy-btn {
+    background: rgba(0, 0, 0, 0.08);
 }
 
 .vera-copy-btn:hover {
-    background: #e0e0e0;
-    color: #333;
+    background: #52b788;
+    color: #000;
+    border-color: #52b788;
+    transform: scale(1.05);
+}
+
+.vera-copy-btn:hover .vera-copy-icon {
+    stroke: #000;
+}
+
+.vera-copy-btn.copied {
+    background: #2d6a4f;
+    color: white;
+    border-color: #2d6a4f;
 }
 
 .vera-copy-btn-text {
     pointer-events: none;
+    font-weight: 500;
+}
+
+/* Welcome message copy button styling */
+#vera-welcome-message-content {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+#vera-welcome-message-content .vera-copy-btn {
+    align-self: flex-end;
+}
+
+/* Message content styling */
+.vera-message-content {
+    display: block;
+    width: 100%;
+    word-wrap: break-word;
+    white-space: pre-wrap;
+    /* Preserve newlines */
+}
+
+/* Dark theme support for copy button */
+body.dark-theme .vera-copy-btn {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: #aaa;
+}
+
+body.dark-theme .vera-message-bubble:hover .vera-copy-btn {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+body.dark-theme .vera-copy-btn:hover {
+    background: #52b788;
+    color: #fff;
+    border-color: #52b788;
+}
+
+body.dark-theme .vera-copy-btn:hover .vera-copy-icon {
+    stroke: #fff;
+}
+
+body.dark-theme .vera-copy-btn.copied {
+    background: #2d6a4f;
+    color: white;
+    border-color: #2d6a4f;
+}
+
+/* Copy icon styling */
+.vera-copy-icon {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+    stroke: currentColor;
+}
+
+/* Icon animation on copy */
+.vera-copy-btn.copied .vera-copy-icon {
+    animation: copySuccess 0.4s ease;
+}
+
+@keyframes copySuccess {
+    0% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.2);
+    }
+
+    100% {
+        transform: scale(1);
+    }
 }
